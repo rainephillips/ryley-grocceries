@@ -14,4 +14,7 @@ class RYLEYGETSMILK_API ARG_GameMode : public AGameMode
 {
 	GENERATED_BODY()
 	
+	protected:
+	virtual void BeginPlay() override;
+	
 };

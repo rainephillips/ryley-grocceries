@@ -15,6 +15,7 @@ UCLASS()
 class RYLEYGETSMILK_API ULiveRagdollHelperLib : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
+public:
 	
 	UFUNCTION(BlueprintCallable)
 	static bool EnableBoneLive(class USkeletalMeshComponent* Mesh, const FName& Bone, const FLiveRagdollBoneData& BoneData);
