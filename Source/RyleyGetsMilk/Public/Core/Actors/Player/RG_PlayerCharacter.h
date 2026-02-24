@@ -32,7 +32,7 @@ public:
 	class ULiveRagdollBoneDataAsset* LiveRigBoneData;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Live Ragdoll Settings");
-	float WaistHeight = 50.f;
+	float WaistHeight = 100.f;
 
 public:
 	// Sets default values for this character's properties
