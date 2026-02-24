@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "GameFramework/Pawn.h"
 #include "RG_PlayerCharacter.generated.h"
 
 USTRUCT(BlueprintType)
@@ -23,7 +23,7 @@ public:
 };
 
 UCLASS()
-class RYLEYGETSMILK_API ARG_PlayerCharacter : public ACharacter
+class RYLEYGETSMILK_API ARG_PlayerCharacter : public APawn
 {
 	GENERATED_BODY()
 	
@@ -62,14 +62,8 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 public:
-	UFUNCTION(BlueprintCallable)
-	void ToggleRagdoll();
-	
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION()
 	void StartRagdoll();
-	
-	UFUNCTION(BlueprintCallable)
-	void StopRagdoll();
 
 
 public:
@@ -84,32 +78,37 @@ protected:
 	bool bIsRagdolling = false;
 	
 private:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Player Components", meta = (AllowPrivateAccess = true))
+	class USkeletalMeshComponent* Skeleton;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Player Components", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Player Components", meta = (AllowPrivateAccess = true))
 	class UCameraComponent* Camera;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Player Components", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Player Components", meta = (AllowPrivateAccess = true))
 	class USpringArmComponent* Boom;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Components", meta = (AllowPrivateAccess = true))
+	class USceneComponent* Root;
 	
 private:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
 	TMap<FString, FLiveRigTargetData> LiveRigTargetPoints;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
 	USceneComponent* LRT_Root;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
 	USceneComponent* LRT_Waist;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
 	USceneComponent* LRT_LeftHand;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
 	USceneComponent* LRT_RightHand;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
 	USceneComponent* LRT_LeftFoot;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
 	USceneComponent* LRT_RightFoot;
 };

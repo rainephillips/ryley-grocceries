@@ -21,11 +21,19 @@ ARG_PlayerCharacter::ARG_PlayerCharacter()
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	bAsyncPhysicsTickEnabled = true;
+
+	Root = CreateDefaultSubobject<USceneComponent>("SceneRoot");
+	SetRootComponent(Root);
 	
-	GetMesh()->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, -90.0f), FRotator(0.0f, -90.0f, 0.0f));
+	Skeleton = CreateDefaultSubobject<USkeletalMeshComponent>("Skeleton");
+	Skeleton->SetupAttachment(Root);
+
+	Skeleton->SetMassOverrideInKg(NAME_None, 10.0f, true);
+	
+	Skeleton->SetRelativeLocationAndRotation(FVector(0.0f, 0.0f, -90.0f), FRotator(0.0f, -90.0f, 0.0f));
 	
 	LRT_Root = CreateDefaultSubobject<USceneComponent>("LRT_Root");
-	LRT_Root->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::KeepWorldTransform);
+	LRT_Root->AttachToComponent(Root, FAttachmentTransformRules::KeepWorldTransform);
 	LRT_Root->SetRelativeLocationAndRotation(FVector{0.f, 0.f, -90.f}, FRotator{0.f, -90.f, 0.f});
 	
 	const TArray<FString> BoneNames = {"Waist", "LeftHand", "RightHand", "LeftFoot", "RightFoot"};
@@ -81,29 +89,7 @@ void ARG_PlayerCharacter::UpdateTargetPositions()
 void ARG_PlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	TArray<FString> KeysToRemove;
-	
-	USkeletalMeshComponent* Skeleton = GetMesh();
-	
-	for (auto& LiveRigData : LiveRigTargetPoints)
-	{
-		if (FLiveRigBoneData* BoneData = LiveRigBoneData->BoneDataMap.Find(LiveRigData.Key))
-		{
-			FLiveRigTargetData& TargetData = LiveRigData.Value;
-			TargetData.BoneTarget = BoneData->BoneName;
-			TargetData.PhysicsHandle = NewObject<UPhysicsHandleComponent>(this, FName(*FString::Printf(TEXT("%s_PhysicsHandle"), *LiveRigData.Key)));
-			TargetData.PhysicsHandle->RegisterComponent();
-			FVector BonePos = Skeleton->GetBoneLocation(TargetData.BoneTarget, EBoneSpaces::WorldSpace);
-			TargetData.PhysicsHandle->GrabComponentAtLocation(Skeleton, TargetData.BoneTarget, BonePos);
-		}
-		else
-			KeysToRemove.Add(LiveRigData.Key);
-	}
-	
-	for (const FString& Key : KeysToRemove)
-		LiveRigTargetPoints.Remove(Key);
-	
+	StartRagdoll();
 	
 }
 
@@ -111,12 +97,6 @@ void ARG_PlayerCharacter::BeginPlay()
 void ARG_PlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
-}
-
-void ARG_PlayerCharacter::AsyncPhysicsTickActor(float DeltaTime, float SimTime)
-{
-	Super::AsyncPhysicsTickActor(DeltaTime, SimTime);
 	
 	for (auto& LiveRigData : LiveRigTargetPoints)
 	{
@@ -133,6 +113,12 @@ void ARG_PlayerCharacter::AsyncPhysicsTickActor(float DeltaTime, float SimTime)
 	10
 );
 	}
+	
+}
+
+void ARG_PlayerCharacter::AsyncPhysicsTickActor(float DeltaTime, float SimTime)
+{
+	Super::AsyncPhysicsTickActor(DeltaTime, SimTime);
 }
 
 // Called to bind functionality to input
@@ -146,36 +132,38 @@ void ARG_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	}
 }
 
-void ARG_PlayerCharacter::ToggleRagdoll()
-{
-	if (bIsRagdolling)
-		StopRagdoll();
-	else
-		StartRagdoll();
-}
-
 void ARG_PlayerCharacter::StartRagdoll()
 {
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	//GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
-	USkeletalMeshComponent* Skeleton = GetMesh();
 	Skeleton->SetCollisionObjectType(ECC_Pawn);
 	Skeleton->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
 	
 	ULiveRagdollHelperLib::EnableBoneLive(Skeleton, "Waist", FLiveRagdollBoneData{ 1.f, true, true});
 	bIsRagdolling = true;
-}
 
-void ARG_PlayerCharacter::StopRagdoll()
-{
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	TArray<FString> KeysToRemove;
 	
-	USkeletalMeshComponent* Skeleton = GetMesh();
-	Skeleton->SetCollisionObjectType(ECC_Pawn);
-	Skeleton->SetCollisionEnabled(ECollisionEnabled::Type::QueryOnly);
+	for (auto& LiveRigData : LiveRigTargetPoints)
+	{
+		if (FLiveRigBoneData* BoneData = LiveRigBoneData->BoneDataMap.Find(LiveRigData.Key))
+		{
+			FLiveRigTargetData& TargetData = LiveRigData.Value;
+			TargetData.BoneTarget = BoneData->BoneName;
+			TargetData.PhysicsHandle = NewObject<UPhysicsHandleComponent>(this, FName(*FString::Printf(TEXT("%s_PhysicsHandle"), *LiveRigData.Key)));
+			TargetData.PhysicsHandle->RegisterComponent();
+			FVector BonePos = Skeleton->GetBoneLocation(TargetData.BoneTarget, EBoneSpaces::WorldSpace);
+			UE_LOG(LogTemp, Warning, TEXT("Grabbing %s | Simulating: %d"),
+	*TargetData.BoneTarget.ToString(),
+	Skeleton->IsSimulatingPhysics(TargetData.BoneTarget));
+			TargetData.PhysicsHandle->GrabComponentAtLocation(Skeleton, TargetData.BoneTarget, BonePos);
+		}
+		else
+			KeysToRemove.Add(LiveRigData.Key);
+	}
 	
-	ULiveRagdollHelperLib::DisableBoneLive(Skeleton, "Waist", FLiveRagdollBoneData{ 1.f, true, true});
-	bIsRagdolling = false;
+	for (const FString& Key : KeysToRemove)
+		LiveRigTargetPoints.Remove(Key);
 }
 
 void ARG_PlayerCharacter::Move(const FVector2D& Direction)

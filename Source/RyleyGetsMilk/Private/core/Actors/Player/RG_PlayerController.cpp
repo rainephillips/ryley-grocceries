@@ -34,10 +34,6 @@ void ARG_PlayerController::BindActions(class ARG_PlayerCharacter* InPlayerCharac
 			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, this, &ARG_PlayerController::Look);
 		}
 		
-		if (const UInputAction* Action = InputConfig->Find("Ragdoll"))
-		{
-			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Started, InPlayerCharacter, &ARG_PlayerCharacter::ToggleRagdoll);
-		}
 		
 		if (const UInputAction* Action = InputConfig->Find("LeftFoot"))
 		{
