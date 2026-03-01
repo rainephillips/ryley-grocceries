@@ -24,14 +24,14 @@ void ARG_PlayerController::BindActions(class ARG_PlayerCharacter* InPlayerCharac
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
 	{
-		if (const UInputAction* Action = InputConfig->Find("Move"))
-		{
-			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, this, &ARG_PlayerController::Move);
-		}
-		
 		if (const UInputAction* Action = InputConfig->Find("Look"))
 		{
 			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, this, &ARG_PlayerController::Look);
+		}
+
+		if (const UInputAction* Action = InputConfig->Find("MoveLimb"))
+		{
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, this, &ARG_PlayerController::MoveLimb);
 		}
 		
 		
@@ -67,16 +67,6 @@ void ARG_PlayerController::AcknowledgePossession(class APawn* P)
 	}
 }
 
-void ARG_PlayerController::Move(const FInputActionValue& Value)
-{
-	const FVector2D Axis = Value.Get<FVector2D>();
-
-	if (!Axis.IsNearlyZero() && IsValid(PlayerCharacter))
-	{
-		PlayerCharacter->Move(Axis);
-	}
-}
-
 void ARG_PlayerController::Look(const FInputActionValue& Value)
 {
 	const FVector2D Axis = Value.Get<FVector2D>();
@@ -87,8 +77,19 @@ void ARG_PlayerController::Look(const FInputActionValue& Value)
 	}
 }
 
+void ARG_PlayerController::MoveLimb(const FInputActionValue& Value)
+{
+	const FVector Axis = Value.Get<FVector>();
+
+	if (!Axis.IsNearlyZero() && IsValid(PlayerCharacter))
+	{
+		PlayerCharacter->MoveLimb(Axis);
+	}
+}
+
 void ARG_PlayerController::MoveLeftFoot(const FInputActionValue& Value)
 {
+	
 	FVector MousePos;
 	if (UCommonBlueprintFunctionLibrary::GetMousePosInWorldCoordinates(this, MousePos))
 		PlayerCharacter->MoveLeftFoot(MousePos);

@@ -68,10 +68,10 @@ public:
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Controls")
-	void Move(const FVector2D& Direction);
+	void Look(const FVector2D& Direction);
 
 	UFUNCTION(BlueprintCallable, Category = "Controls")
-	void Look(const FVector2D& Direction);
+	void MoveLimb(const FVector& Direction);
 	
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
@@ -111,4 +111,7 @@ private:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
 	USceneComponent* LRT_RightFoot;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
+	USceneComponent* LRT_Head;
 };

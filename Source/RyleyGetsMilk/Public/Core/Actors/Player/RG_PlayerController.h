@@ -33,11 +33,12 @@ private:
 	class ARG_PlayerCharacter* PlayerCharacter;
 	
 private:
-	UFUNCTION()
-	void Move(const FInputActionValue& Value);
-
+	
 	UFUNCTION()
 	void Look(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void MoveLimb(const FInputActionValue& Value);
 	
 	UFUNCTION()
 	void MoveLeftFoot(const FInputActionValue& Value);

@@ -42,6 +42,7 @@ void UCommonBlueprintFunctionLibrary::SetGameAndUIInputMode(UObject* WorldContex
 	if (APlayerController* PC = UGameplayStatics::GetPlayerController(WorldContextObject, PlayerID))
 	{
 		FInputModeGameAndUI GameAndUIInput;
+		GameAndUIInput.SetLockMouseToViewportBehavior(MouseLock);
 		PC->SetInputMode(GameAndUIInput);
 		PC->SetShowMouseCursor(bShowMouse);
 		if (IsValid(Focus))

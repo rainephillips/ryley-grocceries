@@ -36,7 +36,7 @@ ARG_PlayerCharacter::ARG_PlayerCharacter()
 	LRT_Root->AttachToComponent(Root, FAttachmentTransformRules::KeepWorldTransform);
 	LRT_Root->SetRelativeLocationAndRotation(FVector{0.f, 0.f, -90.f}, FRotator{0.f, -90.f, 0.f});
 	
-	const TArray<FString> BoneNames = {"Waist", "LeftHand", "RightHand", "LeftFoot", "RightFoot"};
+	const TArray<FString> BoneNames = {"Waist", "LeftHand", "RightHand", "LeftFoot", "RightFoot", "Head"};
 	for (const FString& Bone : BoneNames)
 	{
 		USceneComponent* BoneTarget = CreateDefaultSubobject<USceneComponent>(
@@ -51,12 +51,14 @@ ARG_PlayerCharacter::ARG_PlayerCharacter()
 	LRT_RightHand = LiveRigTargetPoints["RightHand"].Target;
 	LRT_LeftFoot = LiveRigTargetPoints["LeftFoot"].Target;
 	LRT_RightFoot = LiveRigTargetPoints["RightFoot"].Target;
+	LRT_RightFoot = LiveRigTargetPoints["Head"].Target;
 	
 	Boom = CreateDefaultSubobject<USpringArmComponent>("Boom");
 	Boom->SetupAttachment(LRT_Waist);
 	Boom->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f));
 	Boom->TargetArmLength = 400.0f;
 	Boom->bUsePawnControlRotation = true;
+	Boom->bEnableCameraLag = true;
 	Camera = CreateDefaultSubobject<UCameraComponent>("Camera");
 	Camera->SetupAttachment(Boom);
 
@@ -81,6 +83,7 @@ void ARG_PlayerCharacter::UpdateTargetPositions()
 	
 	const FVector MidPoint = (LeftFootPos + RightFootPos) * 0.5f;
 	LiveRigTargetPoints["Waist"].Target->SetWorldLocation(FVector{MidPoint.X, MidPoint.Y, MidPoint.Z + WaistHeight});
+	LiveRigTargetPoints["Head"].Target->SetWorldLocation(FVector{MidPoint.X, MidPoint.Y, MidPoint.Z + WaistHeight * 1.25f});
 	LiveRigTargetPoints["LeftHand"].Target->SetWorldLocation(FVector{LeftFootPos.X, LeftFootPos.Y, LeftFootPos.Z + WaistHeight});
 	LiveRigTargetPoints["RightHand"].Target->SetWorldLocation(FVector{RightFootPos.X, RightFootPos.Y, RightFootPos.Z + WaistHeight});
 }
@@ -166,20 +169,16 @@ void ARG_PlayerCharacter::StartRagdoll()
 		LiveRigTargetPoints.Remove(Key);
 }
 
-void ARG_PlayerCharacter::Move(const FVector2D& Direction)
-{
-	FRotator Rotation = GetControlRotation();
-
-	FVector Forward = UKismetMathLibrary::GetForwardVector(FRotator{ 0.0, Rotation.Yaw, 0.0});
-	FVector Right = UKismetMathLibrary::GetRightVector(FRotator{ 0.0, Rotation.Yaw, 0.0});
-
-	AddMovementInput(Forward, Direction.Y);
-	AddMovementInput(Right, Direction.X);
-}
-
 void ARG_PlayerCharacter::Look(const FVector2D& Direction)
 {
 	AddControllerYawInput(Direction.X);
 	AddControllerPitchInput(Direction.Y);
+}
+
+void ARG_PlayerCharacter::MoveLimb(const FVector& Direction)
+{
+	FVector Forward = UKismetMathLibrary::GetForwardVector(GetControlRotation());
+	
+	LRT_LeftFoot->AddWorldOffset(Forward * Direction);
 }
 
