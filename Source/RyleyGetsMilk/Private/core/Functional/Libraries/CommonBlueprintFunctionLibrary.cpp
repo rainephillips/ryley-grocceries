@@ -52,9 +52,9 @@ void UCommonBlueprintFunctionLibrary::SetGameAndUIInputMode(UObject* WorldContex
 	}
 }
 
-void UCommonBlueprintFunctionLibrary::LineTraceFromMouse(APlayerController* PlayerController, float Distance, ETraceTypeQuery TraceChannel,
-	TArray<AActor*> Ignored, bool bTraceComplex, bool bShowHits, TArray<FHitResult>& Hits, FHitResult& Hit,
-	bool& bDidHit)
+void UCommonBlueprintFunctionLibrary::LineTraceFromMouse(APlayerController* PlayerController, float Distance,
+	ETraceTypeQuery TraceChannel, TArray<AActor*> Ignored, bool bTraceComplex, bool bShowHits, TArray<FHitResult>& Hits,
+	FHitResult& Hit, bool& bDidHit)
 {
 	const UWorld* World = PlayerController->GetWorld();
 	
@@ -89,7 +89,6 @@ void UCommonBlueprintFunctionLibrary::LineTraceFromMouse(APlayerController* Play
 		Hits, FLinearColor::Blue, FLinearColor::Yellow, 5.0f);
 #endif
 }
-
 bool UCommonBlueprintFunctionLibrary::GetMousePosInWorldCoordinates(APlayerController* PlayerController,
 	FVector& WorldLocation, bool bShowDebug )
 {
@@ -128,6 +127,38 @@ bool UCommonBlueprintFunctionLibrary::GetMousePosInWorldCoordinates(APlayerContr
 	WorldLocation = HitResult.Location;
 	
 	return true;
+}
+
+FVector UCommonBlueprintFunctionLibrary::GetFirstHitLocation(UObject* WorldContextObject, const FVector& Start,
+	const FVector& Direction, ETraceTypeQuery TraceChannel, bool& bDidHit, TArray<AActor*> Ignored, bool bShowHits,
+	bool bTraceComplex)
+{
+	const FVector End = Start + Direction * 10000.0f;
+	
+	const UWorld* World = WorldContextObject->GetWorld();
+	
+	FCollisionQueryParams QueryParams;
+#if ENABLE_DRAW_DEBUG
+	QueryParams.bDebugQuery = bShowHits;
+#endif
+	QueryParams.AddIgnoredActors(Ignored);
+	FHitResult HitResult;
+	
+	bDidHit = World->LineTraceSingleByChannel(
+		HitResult,
+		Start,
+		End,
+		ECollisionChannel::ECC_Visibility,
+		QueryParams
+	);
+	
+#if ENABLE_DRAW_DEBUG
+	DrawDebugLineTraceSingle(
+		World, Start, End, bShowHits? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None, true,
+		HitResult, FLinearColor::Blue, FLinearColor::Yellow, 5.0f);
+#endif
+	
+	return HitResult.Location;
 }
 
 

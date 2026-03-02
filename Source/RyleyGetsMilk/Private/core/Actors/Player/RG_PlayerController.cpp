@@ -29,20 +29,44 @@ void ARG_PlayerController::BindActions(class ARG_PlayerCharacter* InPlayerCharac
 			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, this, &ARG_PlayerController::Look);
 		}
 
-		if (const UInputAction* Action = InputConfig->Find("MoveLimb"))
+		if (const UInputAction* Action = InputConfig->Find("SteerFeet"))
 		{
-			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, this, &ARG_PlayerController::MoveLimb);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, this, &ARG_PlayerController::SteerFeet);
+		}
+		
+		
+		if (const UInputAction* Action = InputConfig->Find("Die"))
+		{
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, PlayerCharacter, &ARG_PlayerCharacter::Kill);
 		}
 		
 		
 		if (const UInputAction* Action = InputConfig->Find("LeftFoot"))
 		{
-			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Started, this, &ARG_PlayerController::MoveLeftFoot);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Started, PlayerCharacter, &ARG_PlayerCharacter::LiftLeg, false);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Canceled, PlayerCharacter, &ARG_PlayerCharacter::DropLeg, false);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Completed, PlayerCharacter, &ARG_PlayerCharacter::DropLeg, false);
 		}
 		
 		if (const UInputAction* Action = InputConfig->Find("RightFoot"))
 		{
-			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Started, this, &ARG_PlayerController::MoveRightFoot);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Started, PlayerCharacter, &ARG_PlayerCharacter::LiftLeg, true);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Canceled, PlayerCharacter, &ARG_PlayerCharacter::DropLeg, true);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Completed, PlayerCharacter, &ARG_PlayerCharacter::DropLeg, true);
+		}
+		
+		if (const UInputAction* Action = InputConfig->Find("LeftArm"))
+		{
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Started, PlayerCharacter, &ARG_PlayerCharacter::LiftArm, false);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Canceled, PlayerCharacter, &ARG_PlayerCharacter::DropArm, false);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Completed, PlayerCharacter, &ARG_PlayerCharacter::DropArm, false);
+		}
+		
+		if (const UInputAction* Action = InputConfig->Find("RightArm"))
+		{
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Started, PlayerCharacter, &ARG_PlayerCharacter::LiftArm, true);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Canceled, PlayerCharacter, &ARG_PlayerCharacter::DropArm, true);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Completed, PlayerCharacter, &ARG_PlayerCharacter::DropArm, true);
 		}
 	}
 }
@@ -87,17 +111,9 @@ void ARG_PlayerController::MoveLimb(const FInputActionValue& Value)
 	}
 }
 
-void ARG_PlayerController::MoveLeftFoot(const FInputActionValue& Value)
+void ARG_PlayerController::SteerFeet(const FInputActionValue& Value)
 {
+	const FVector2D Axis = Value.Get<FVector2D>();
 	
-	FVector MousePos;
-	if (UCommonBlueprintFunctionLibrary::GetMousePosInWorldCoordinates(this, MousePos))
-		PlayerCharacter->MoveLeftFoot(MousePos);
-}
-
-void ARG_PlayerController::MoveRightFoot(const FInputActionValue& Value)
-{
-	FVector MousePos;
-	if (UCommonBlueprintFunctionLibrary::GetMousePosInWorldCoordinates(this, MousePos))
-		PlayerCharacter->MoveRightFoot(MousePos);
+	PlayerCharacter->SteerFeet(Axis);
 }

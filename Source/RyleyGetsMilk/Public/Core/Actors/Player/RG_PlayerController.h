@@ -41,8 +41,5 @@ private:
 	void MoveLimb(const FInputActionValue& Value);
 	
 	UFUNCTION()
-	void MoveLeftFoot(const FInputActionValue& Value);
-	
-	UFUNCTION()
-	void MoveRightFoot(const FInputActionValue& Value);
+	void SteerFeet(const FInputActionValue& Value);
 };

@@ -30,4 +30,7 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category="Input Helper")
 	static bool GetMousePosInWorldCoordinates(APlayerController* PlayerController, FVector& WorldLocation, bool bShowDebug = false);
+	
+	UFUNCTION(BlueprintCallable, Category="Tracing", meta=(WorldContext="WorldContextObject"))
+	static FVector GetFirstHitLocation(UObject* WorldContextObject, const FVector& Start, const FVector& Direction, ETraceTypeQuery TraceChannel, bool& bDidHit, TArray<AActor*> Ignored, bool bShowHits = false, bool bTraceComplex = false );
 };

@@ -64,6 +64,9 @@ public:
 public:
 	UFUNCTION()
 	void StartRagdoll();
+	
+	UFUNCTION()
+	void Kill();
 
 
 public:
@@ -72,6 +75,25 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Controls")
 	void MoveLimb(const FVector& Direction);
+	
+	UFUNCTION(BlueprintCallable, Category = "Controls")
+	void LiftLeg(const bool bRightLeg);
+	
+	UFUNCTION(BlueprintCallable, Category = "Controls")
+	void DropLeg(const bool bRightLeg);
+	
+	UFUNCTION(BlueprintCallable, Category = "Controls")
+	void LiftArm(const bool bRightArm);
+	
+	UFUNCTION(BlueprintCallable, Category = "Controls")
+	void DropArm(const bool bRightArm);
+	
+	UFUNCTION(BlueprintCallable, Category = "Controls")
+	void SteerFeet(const FVector2D& Direction);
+	
+	UFUNCTION(BlueprintCallable, Category = "Controls")
+	void UpdateArmPos();
+
 	
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
@@ -114,4 +136,31 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
 	USceneComponent* LRT_Head;
+	
+private:
+	UPROPERTY()
+	FVector RightFootLiftedPos;
+	
+	UPROPERTY()
+	FVector LeftFootLiftedPos;
+	
+	UPROPERTY()
+	bool bLeftLegLifted = false;
+	UPROPERTY()
+	bool bRightLegLifted = false;
+	
+	UPROPERTY()
+	bool bLeftArmLifted = false;
+	UPROPERTY()
+	bool bRightArmLifted = false;
+	
+private:
+	float LegLength = 0.f;
+	float ArmLength = 0.f;
+	bool bThighLocated = false;
+	bool bShoulderLocated = false;
+	
+private:
+	UFUNCTION()
+	void GrabBone(FLiveRigTargetData& RigData);
 };

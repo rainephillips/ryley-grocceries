@@ -9,5 +9,5 @@ void ARG_GameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	UCommonBlueprintFunctionLibrary::SetGameAndUIInputMode(this, EMouseLockMode::DoNotLock, nullptr, 0);
+	UCommonBlueprintFunctionLibrary::SetGameInputMode(this, 0);
 }
