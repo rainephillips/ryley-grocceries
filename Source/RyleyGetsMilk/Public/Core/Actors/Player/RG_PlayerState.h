@@ -47,6 +47,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	inline bool IsDead() const { return !bIsAlive; }
 
+	UFUNCTION(BlueprintCallable)
+	bool HasMilk() const;
+
 private:
 	UFUNCTION()
 	uint8 GetGrabbingArm() const;

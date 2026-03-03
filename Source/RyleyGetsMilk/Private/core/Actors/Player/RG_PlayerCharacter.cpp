@@ -77,6 +77,7 @@ ARG_PlayerCharacter::ARG_PlayerCharacter()
 	Skeleton->SetCollisionProfileName(FName("Pawn"));
 	Skeleton->SetNotifyRigidBodyCollision(true);
 	Skeleton->SetAllBodiesNotifyRigidBodyCollision(true);
+	Skeleton->SetGenerateOverlapEvents(true);
 	Skeleton->OnComponentHit.AddDynamic(this, &ARG_PlayerCharacter::OnHit);
 
 	AudioPlayer = CreateDefaultSubobject<UAudioComponent>("AudioPlayer");
