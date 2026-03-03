@@ -6,6 +6,28 @@
 #include "GameFramework/PlayerState.h"
 #include "RG_PlayerState.generated.h"
 
+USTRUCT(BlueprintType)
+struct FPlayerRespawnData
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector LeftFootLocation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector RightFootLocation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector HeadLocation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector WaistLocation;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector MainLocation;
+};
+
 /**
  * 
  */
@@ -39,6 +61,9 @@ private:
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Limb State", meta = (AllowPrivateAccess = true))
 	bool bHeadDetached = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
+	FPlayerRespawnData RespawnData;
 
 public:
 	UFUNCTION(BlueprintCallable)

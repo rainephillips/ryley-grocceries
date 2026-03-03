@@ -6,6 +6,7 @@
 #include "GameFramework/Pawn.h"
 #include "RG_PlayerCharacter.generated.h"
 
+
 USTRUCT(BlueprintType)
 struct FLiveRigTargetData
 {
@@ -26,7 +27,7 @@ UCLASS()
 class RYLEYGETSMILK_API ARG_PlayerCharacter : public APawn
 {
 	GENERATED_BODY()
-	
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	class ULiveRagdollBoneDataAsset* LiveRigBoneData;
@@ -99,6 +100,13 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Controls")
 	void UpdateArmPos();
+
+public:
+	UFUNCTION(BlueprintCallable, Category = "Respawn Handling")
+	void SavePlayerLocation();
+
+	UFUNCTION(BlueprintCallable, Category = "Respawn Handling")
+	void LoadPlayerLocation();
 	
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Player Components", meta = (AllowPrivateAccess = true))
@@ -140,7 +148,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
 	USceneComponent* LRT_Head;
-	
+
 private:
 	UPROPERTY()
 	FVector RightFootLiftedPos;

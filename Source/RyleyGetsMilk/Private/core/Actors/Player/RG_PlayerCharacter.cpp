@@ -345,6 +345,34 @@ void ARG_PlayerCharacter::UpdateArmPos()
 	}
 }
 
+void ARG_PlayerCharacter::SavePlayerLocation()
+{
+	if (!GamePlayerState)
+		return;
+	
+	GamePlayerState->RespawnData =
+		FPlayerRespawnData{
+			LRT_LeftFoot->GetComponentLocation(),
+			LRT_RightFoot->GetComponentLocation(),
+			LRT_Head->GetComponentLocation(),
+			LRT_Waist->GetComponentLocation(),
+			GetActorLocation()
+		};
+}
+
+void ARG_PlayerCharacter::LoadPlayerLocation()
+{
+	if (!GamePlayerState)
+		return;
+
+	const FPlayerRespawnData& Data = GamePlayerState->RespawnData;
+	SetActorLocation(Data.MainLocation);
+	LRT_LeftFoot->SetWorldLocation(Data.LeftFootLocation);
+	LRT_RightFoot->SetWorldLocation(Data.RightFootLocation);
+	LRT_Waist->SetWorldLocation(Data.WaistLocation);
+	LRT_Head->SetWorldLocation(Data.HeadLocation);
+}
+
 void ARG_PlayerCharacter::GrabBone(FLiveRigTargetData& RigData)
 {
 	FVector BoneLocation = Skeleton->GetBoneLocation(RigData.BoneTarget, EBoneSpaces::WorldSpace);

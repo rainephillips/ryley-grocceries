@@ -78,6 +78,16 @@ void ARG_PlayerController::BindActions(class ARG_PlayerCharacter* InPlayerCharac
 		{
 			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, PlayerCharacter, &ARG_PlayerCharacter::DropItem, true);
 		}
+
+		if (const UInputAction* Action = InputConfig->Find("DebugSave"))
+		{
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, PlayerCharacter, &ARG_PlayerCharacter::SavePlayerLocation);
+		}
+
+		if (const UInputAction* Action = InputConfig->Find("DebugLoad"))
+		{
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, PlayerCharacter, &ARG_PlayerCharacter::LoadPlayerLocation);
+		}
 	}
 }
 
