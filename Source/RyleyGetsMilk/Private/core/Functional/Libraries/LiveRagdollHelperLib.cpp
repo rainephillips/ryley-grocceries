@@ -45,7 +45,7 @@ bool ULiveRagdollHelperLib::DisableBoneLive(class USkeletalMeshComponent* Mesh, 
 	return true;
 }
 
-bool ULiveRagdollHelperLib::AttachActorToSocketByName(AActor* Actor, class USkeletalMeshComponent* Mesh,
+bool ULiveRagdollHelperLib::AttachActorToSocketByName(AActor* Actor, class UPrimitiveComponent* Mesh,
 	const FName& SocketName, bool bSnapToTarget, bool bUpdateCollision, bool bCollisionEnabled)
 {
 	if (!IsValid(Actor) || !IsValid(Mesh))

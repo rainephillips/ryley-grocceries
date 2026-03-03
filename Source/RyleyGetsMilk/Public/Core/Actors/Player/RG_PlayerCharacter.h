@@ -33,6 +33,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class USoundBase* DeathSound = nullptr;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
+	class ARG_PlayerState* GamePlayerState = nullptr;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Live Ragdoll Settings");
 	float WaistHeight = 100.f;
@@ -87,6 +90,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Controls")
 	void DropArm(const bool bRightArm);
+
+	UFUNCTION(BlueprintCallable, Category = "Controls")
+	void DropItem(const bool bRightArm);
 	
 	UFUNCTION(BlueprintCallable, Category = "Controls")
 	void SteerFeet(const FVector2D& Direction);
@@ -142,22 +148,6 @@ private:
 	UPROPERTY()
 	FVector LeftFootLiftedPos;
 	
-	UPROPERTY()
-	bool bLeftLegLifted = false;
-	UPROPERTY()
-	bool bRightLegLifted = false;
-	
-	UPROPERTY()
-	bool bLeftArmLifted = false;
-	UPROPERTY()
-	bool bRightArmLifted = false;
-
-	UPROPERTY()
-	bool bHeadDetached = false;
-
-	UPROPERTY()
-	bool bIsDead = false;
-	
 private:
 	float LegLength = 0.f;
 	float ArmLength = 0.f;
@@ -169,6 +159,6 @@ private:
 	void GrabBone(FLiveRigTargetData& RigData);
 
 	UFUNCTION()
-	void OnHeadCollision(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent,
+	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent,
 		FVector NormalImpulse, const FHitResult& HitResult);
 };

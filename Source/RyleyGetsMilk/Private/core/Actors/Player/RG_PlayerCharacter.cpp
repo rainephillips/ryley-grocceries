@@ -3,12 +3,16 @@
 
 #include "Core/Actors/Player/RG_PlayerCharacter.h"
 
+#include "MovieSceneTracksComponentTypes.h"
+
 #include "Camera/CameraComponent.h"
 
 #include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
 
+#include "Core/Actors/Items/RG_ItemBase.h"
 #include "Core/Actors/Player/RG_PlayerController.h"
+#include "Core/Actors/Player/RG_PlayerState.h"
 #include "Core/Data/Ragdoll/LiveRagdollBoneDataAsset.h"
 #include "Core/Functional/Libraries/LiveRagdollHelperLib.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -20,6 +24,7 @@
 #define LEG_LENGTH_HEIGHT_MULT 0.75f
 #define LEG_LENGTH_DIST_MULT 2.f
 #define ARM_LENGTH_MULT 1.5f
+#define FUNNY_RAGDOLL_MULT 10.f
 #define HANDLE_INTERP 10.0f
 
 // Sets default values
@@ -71,12 +76,14 @@ ARG_PlayerCharacter::ARG_PlayerCharacter()
 
 	Skeleton->SetCollisionProfileName(FName("Pawn"));
 	Skeleton->SetNotifyRigidBodyCollision(true);
-	Skeleton->SetBodyNotifyRigidBodyCollision(true, LiveRigTargetPoints["Head"].BoneTarget);
-	Skeleton->OnComponentHit.AddDynamic(this, &ARG_PlayerCharacter::OnHeadCollision);
+	Skeleton->SetAllBodiesNotifyRigidBodyCollision(true);
+	Skeleton->OnComponentHit.AddDynamic(this, &ARG_PlayerCharacter::OnHit);
 
 	AudioPlayer = CreateDefaultSubobject<UAudioComponent>("AudioPlayer");
 	AudioPlayer->SetupAttachment(Root);
 	AudioPlayer->bCanPlayMultipleInstances = true;
+
+	Tags.Add("Player");
 
 }
 
@@ -106,6 +113,12 @@ void ARG_PlayerCharacter::UpdateTargetPositions()
 void ARG_PlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	APlayerState* PS = GetPlayerState();
+	if (ARG_PlayerState* CastedPS = Cast<ARG_PlayerState>(GetPlayerState()))
+		GamePlayerState = CastedPS;
+	
+	
 	StartRagdoll();
 
 }
@@ -219,10 +232,10 @@ void ARG_PlayerCharacter::StartRagdoll()
 
 void ARG_PlayerCharacter::Kill()
 {
-	if (bIsDead)
+	if (!GamePlayerState || GamePlayerState->IsDead())
 		return;
 	
-	bIsDead = true;
+	GamePlayerState->bIsAlive = false;
 
 	AudioPlayer->SetSound(DeathSound);
 	AudioPlayer->Play();
@@ -231,7 +244,16 @@ void ARG_PlayerCharacter::Kill()
 	{
 		FLiveRigTargetData& BoneData = LiveRigData.Value;
 		BoneData.PhysicsHandle->ReleaseComponent();
+
+		if (FBodyInstance* BodyInstance = Skeleton->GetBodyInstance(BoneData.BoneTarget))
+		{
+			FVector Velocity = BodyInstance->GetUnrealWorldVelocity();
+			Velocity *= FUNNY_RAGDOLL_MULT;
+			BodyInstance->SetLinearVelocity(Velocity, false);
+		}
 	}
+
+	Boom->AttachToComponent(Skeleton, FAttachmentTransformRules::SnapToTargetNotIncludingScale, LiveRigTargetPoints["Waist"].BoneTarget);
 }
 
 void ARG_PlayerCharacter::Look(const FVector2D& Direction)
@@ -243,7 +265,7 @@ void ARG_PlayerCharacter::Look(const FVector2D& Direction)
 
 void ARG_PlayerCharacter::LiftLeg(const bool bRightLeg)
 {
-	if (bIsDead)
+	if (!GamePlayerState || GamePlayerState->IsDead())
 		return;
 	
 	if (bThighLocated)
@@ -255,17 +277,17 @@ void ARG_PlayerCharacter::LiftLeg(const bool bRightLeg)
 		if (bRightLeg)
 		{
 			RightFootLiftedPos = EndPos;
-			bRightLegLifted = true;
+			GamePlayerState->bRightLegLifted = true;
 		}
 		else
 		{
 			LeftFootLiftedPos = EndPos;
-			bLeftLegLifted = true;
+			GamePlayerState->bLeftLegLifted = true;
 		}
 
-		if (bLeftLegLifted && bRightLegLifted && !bHeadDetached)
+		if (GamePlayerState->bLeftLegLifted && GamePlayerState->bRightLegLifted && !GamePlayerState->bHeadDetached)
 		{
-			bHeadDetached = true;
+			GamePlayerState->bHeadDetached = true;
 			LiveRigTargetPoints["Head"].PhysicsHandle->ReleaseComponent();
 			LiveRigTargetPoints["Waist"].PhysicsHandle->ReleaseComponent();
 			LiveRigTargetPoints["LeftFoot"].PhysicsHandle->ReleaseComponent();
@@ -276,7 +298,7 @@ void ARG_PlayerCharacter::LiftLeg(const bool bRightLeg)
 
 void ARG_PlayerCharacter::SteerFeet(const FVector2D& Direction)
 {
-	if (bIsDead)
+	if (!GamePlayerState || GamePlayerState->IsDead())
 		return;
 	
 	const FVector Forward = UKismetMathLibrary::GetForwardVector(GetControlRotation());
@@ -289,13 +311,13 @@ void ARG_PlayerCharacter::SteerFeet(const FVector2D& Direction)
 	TranslatedDirection.Z = 0.f;
 	TranslatedDirection.Normalize();
 	
-	if (bLeftLegLifted)
+	if (GamePlayerState->bLeftLegLifted)
 	{
 		LiveRigTargetPoints["LeftFoot"].Target->SetWorldLocation
 		(LeftFootLiftedPos + TranslatedDirection * LegLength * LEG_LENGTH_DIST_MULT);
 	}
 	
-	if (bRightLegLifted)
+	if (GamePlayerState->bRightLegLifted)
 	{
 		LiveRigTargetPoints["RightFoot"].Target->SetWorldLocation
 		(RightFootLiftedPos + TranslatedDirection * LegLength * LEG_LENGTH_DIST_MULT);
@@ -309,13 +331,13 @@ void ARG_PlayerCharacter::UpdateArmPos()
 	
 	FVector Forward = UKismetMathLibrary::GetForwardVector(GetControlRotation());
 	
-	if (bLeftArmLifted)
+	if (GamePlayerState->bLeftArmLifted)
 	{
 		FVector ShoulderPos = Skeleton->GetBoneLocation(LiveRigBoneData->BoneDataMap["LeftShoulder"].BoneName, EBoneSpaces::WorldSpace);
 		LiveRigTargetPoints["LeftHand"].Target->SetWorldLocation(ShoulderPos + Forward * ArmLength);
 	}
 	
-	if (bRightArmLifted)
+	if (GamePlayerState->bRightArmLifted)
 	{
 		FVector ShoulderPos = Skeleton->GetBoneLocation(LiveRigBoneData->BoneDataMap["RightShoulder"].BoneName, EBoneSpaces::WorldSpace);
 		LiveRigTargetPoints["RightHand"].Target->SetWorldLocation(ShoulderPos + Forward * ArmLength);
@@ -328,16 +350,42 @@ void ARG_PlayerCharacter::GrabBone(FLiveRigTargetData& RigData)
 	RigData.PhysicsHandle->GrabComponentAtLocation(Skeleton, RigData.BoneTarget, BoneLocation);
 }
 
-void ARG_PlayerCharacter::OnHeadCollision(UPrimitiveComponent* HitComponent, AActor* OtherActor,
+void ARG_PlayerCharacter::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& HitResult)
 {
-	UE_LOG(LogTemp, Warning, TEXT("HEAD HIT!"));
-	Kill();
+	if (HitResult.MyBoneName == LiveRigTargetPoints["Head"].BoneTarget)
+	{
+		// Ignore items cause thats just not fun :P
+		if (IsValid(OtherActor) && OtherActor->ActorHasTag("Item"))
+			return;
+		
+		Kill();
+		return;
+	}
+
+	if (IsValid(OtherActor) && OtherActor->ActorHasTag("Item"))
+	{
+		const uint8 GrabbingHand = GamePlayerState->GetGrabbingArm();
+
+		// If no valid hand give up
+		if (!GrabbingHand)
+			return;
+		
+		FName GrabbingSocket = (GrabbingHand == 1) ? FName("LeftHand_Socket") : FName("RightHand_Socket");
+		ARG_ItemBase*& PlayerStateValue = (GrabbingHand == 1) ? GamePlayerState->LeftHandItem : GamePlayerState->RightHandItem;
+		
+		if (ARG_ItemBase* ItemActor = Cast<ARG_ItemBase>(OtherActor))
+		{
+			PlayerStateValue = ItemActor;
+			ItemActor->Grab(this, Skeleton, GrabbingSocket);
+		}
+	}
+	
 }
 
 void ARG_PlayerCharacter::DropLeg(const bool bRightLeg)
 {
-	if (bIsDead)
+	if (!GamePlayerState || GamePlayerState->IsDead())
 		return;
 	
 	FVector StartingPos = LiveRigTargetPoints[(bRightLeg) ? "RightFoot" : "LeftFoot"].Target->GetComponentLocation();
@@ -354,13 +402,13 @@ void ARG_PlayerCharacter::DropLeg(const bool bRightLeg)
 	}
 	
 	if (bRightLeg)
-		bRightLegLifted = false;
+		GamePlayerState->bRightLegLifted = false;
 	else
-		bLeftLegLifted = false;
+		GamePlayerState->bLeftLegLifted = false;
 
-	if (bHeadDetached && !bIsDead)
+	if (GamePlayerState->bHeadDetached)
 	{
-		bHeadDetached = false;
+		GamePlayerState->bHeadDetached = false;
 		GrabBone(LiveRigTargetPoints["Head"]);
 		GrabBone(LiveRigTargetPoints["Waist"]);
 		GrabBone(LiveRigTargetPoints["LeftFoot"]);
@@ -370,29 +418,44 @@ void ARG_PlayerCharacter::DropLeg(const bool bRightLeg)
 
 void ARG_PlayerCharacter::LiftArm(const bool bRightArm)
 {
-	if (bIsDead)
+	if (!GamePlayerState || GamePlayerState->IsDead())
 		return;
 	
 	GrabBone(LiveRigTargetPoints[(bRightArm) ? "RightHand" : "LeftHand"]);
 	
 	if (bRightArm)
-		bRightArmLifted = true;
+		GamePlayerState->bRightArmLifted = true;
 	else
-		bLeftArmLifted = true;
+		GamePlayerState->bLeftArmLifted = true;
 	
 }
 
 void ARG_PlayerCharacter::DropArm(const bool bRightArm)
 {
-	if (bIsDead)
+	if (!GamePlayerState || GamePlayerState->IsDead())
 		return;
 	
 	LiveRigTargetPoints[(bRightArm) ? "RightHand" : "LeftHand"].PhysicsHandle->ReleaseComponent();
 	
 	if (bRightArm)
-		bRightArmLifted = false;
+		GamePlayerState->bRightArmLifted = false;
 	else
-		bLeftArmLifted = false;
+		GamePlayerState->bLeftArmLifted = false;
+}
+
+void ARG_PlayerCharacter::DropItem(const bool bRightArm)
+{
+	if (!GamePlayerState || GamePlayerState->IsDead())
+		return;
+
+	if (ARG_ItemBase*& Item = (bRightArm) ? GamePlayerState->RightHandItem : GamePlayerState->LeftHandItem; !Item)
+		return;
+	else
+	{
+		Item->Drop();
+		Item = nullptr;
+	}
+		
 }
 
 

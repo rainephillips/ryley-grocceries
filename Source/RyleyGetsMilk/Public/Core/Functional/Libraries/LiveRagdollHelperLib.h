@@ -23,7 +23,7 @@ public:
 	static bool DisableBoneLive(class USkeletalMeshComponent* Mesh, const FName& Bone, const FLiveRagdollBoneData& BoneData);
 	
 	UFUNCTION(BlueprintCallable)
-	static bool AttachActorToSocketByName(AActor* Actor, class USkeletalMeshComponent* Mesh, const FName& SocketName,
+	static bool AttachActorToSocketByName(AActor* Actor, class UPrimitiveComponent* Mesh, const FName& SocketName,
 		bool bSnapToTarget = true,
 		bool bUpdateCollision = false, bool bCollisionEnabled = false);
 	
