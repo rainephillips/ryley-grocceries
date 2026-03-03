@@ -129,9 +129,78 @@ bool UCommonBlueprintFunctionLibrary::GetMousePosInWorldCoordinates(APlayerContr
 	return true;
 }
 
+void UCommonBlueprintFunctionLibrary::LineTraceInFrontOfActor(AActor* Actor, FVector Offset, float Distance,
+	FRotator Orientation, ETraceTypeQuery TraceChannel, TArray<AActor*> Ignored, bool bTraceComplex, bool bShowHits,
+	TArray<FHitResult>& Hits, FHitResult& FirstHit, bool& bDidHit)
+{
+	const UWorld* World = Actor->GetWorld();
+	
+	const FVector Start = Actor->GetActorLocation() + Offset;
+	const FRotator FinalRot = Actor->GetActorRotation() + Orientation;
+	const FVector End = Start + FinalRot.Vector() * Distance;
+	
+	FCollisionQueryParams QueryParams;
+	QueryParams.bTraceComplex = bTraceComplex;
+	#if ENABLE_DRAW_DEBUG
+	QueryParams.bDebugQuery = bShowHits;
+	#endif
+	QueryParams.AddIgnoredActors(Ignored);
+	QueryParams.AddIgnoredActor(Actor);
+
+	bDidHit = World->LineTraceMultiByChannel(Hits, Start, End, UEngineTypes::ConvertToCollisionChannel(TraceChannel), QueryParams);
+
+	#if ENABLE_DRAW_DEBUG
+	const EDrawDebugTrace::Type DrawDebugType = bShowHits ?
+		EDrawDebugTrace::ForDuration : EDrawDebugTrace::None;
+
+	DrawDebugLineTraceMulti(
+		World, Start, End, DrawDebugType, bDidHit,
+		Hits, FLinearColor::Blue, FLinearColor::Yellow, 5.0f);
+	#endif
+
+	if (bDidHit)
+	{
+		FirstHit = Hits[0];
+	}
+}
+
+void UCommonBlueprintFunctionLibrary::LineTraceInFrontOfObject(USceneComponent* Component, FVector Offset,
+	float Distance, FRotator Orientation, ETraceTypeQuery TraceChannel, TArray<AActor*> Ignored, bool bTraceComplex,
+	bool bShowHits, TArray<FHitResult>& Hits, FHitResult& FirstHit, bool& bDidHit)
+{
+	const UWorld* World = Component->GetWorld();
+	
+	const FVector Start = Component->GetComponentLocation() + Offset;
+	const FRotator FinalRot = Component->GetComponentRotation() + Orientation;
+	const FVector End = Start + FinalRot.Vector() * Distance;
+	
+	FCollisionQueryParams QueryParams;
+	QueryParams.bTraceComplex = bTraceComplex;
+	#if ENABLE_DRAW_DEBUG
+	QueryParams.bDebugQuery = bShowHits;
+	#endif
+	QueryParams.AddIgnoredActors(Ignored);
+
+	bDidHit = World->LineTraceMultiByChannel(Hits, Start, End, UEngineTypes::ConvertToCollisionChannel(TraceChannel), QueryParams);
+
+	#if ENABLE_DRAW_DEBUG
+	const EDrawDebugTrace::Type DrawDebugType = bShowHits ?
+		EDrawDebugTrace::ForDuration : EDrawDebugTrace::None;
+
+	DrawDebugLineTraceMulti(
+		World, Start, End, DrawDebugType, bDidHit,
+		Hits, FLinearColor::Blue, FLinearColor::Yellow, 5.0f);
+	#endif
+
+	if (bDidHit)
+	{
+		FirstHit = Hits[0];
+	}
+}
+
 FVector UCommonBlueprintFunctionLibrary::GetFirstHitLocation(UObject* WorldContextObject, const FVector& Start,
-	const FVector& Direction, ETraceTypeQuery TraceChannel, bool& bDidHit, TArray<AActor*> Ignored, bool bShowHits,
-	bool bTraceComplex)
+                                                             const FVector& Direction, ETraceTypeQuery TraceChannel, bool& bDidHit, TArray<AActor*> Ignored, bool bShowHits,
+                                                             bool bTraceComplex)
 {
 	const FVector End = Start + Direction * 10000.0f;
 	

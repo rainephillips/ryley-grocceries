@@ -423,6 +423,10 @@ void ARG_PlayerCharacter::LiftArm(const bool bRightArm)
 		return;
 	
 	GrabBone(LiveRigTargetPoints[(bRightArm) ? "RightHand" : "LeftHand"]);
+
+	if (ARG_ItemBase* Item = (bRightArm) ? GamePlayerState->RightHandItem : GamePlayerState->LeftHandItem)
+		Item->Activate();
+	
 	
 	if (bRightArm)
 		GamePlayerState->bRightArmLifted = true;
@@ -437,6 +441,9 @@ void ARG_PlayerCharacter::DropArm(const bool bRightArm)
 		return;
 	
 	LiveRigTargetPoints[(bRightArm) ? "RightHand" : "LeftHand"].PhysicsHandle->ReleaseComponent();
+
+	if (ARG_ItemBase* Item = (bRightArm) ? GamePlayerState->RightHandItem : GamePlayerState->LeftHandItem)
+		Item->Deactivate();
 	
 	if (bRightArm)
 		GamePlayerState->bRightArmLifted = false;
