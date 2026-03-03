@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Core/Types/LiveRagdollBoneData.h"
-
 #include "LiveRagdollHelperLib.generated.h"
 
 /**
@@ -25,6 +24,7 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	static bool AttachActorToSocketByName(AActor* Actor, class USkeletalMeshComponent* Mesh, const FName& SocketName,
+		bool bSnapToTarget = true,
 		bool bUpdateCollision = false, bool bCollisionEnabled = false);
 	
 	

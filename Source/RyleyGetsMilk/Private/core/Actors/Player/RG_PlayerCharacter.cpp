@@ -4,6 +4,10 @@
 #include "Core/Actors/Player/RG_PlayerCharacter.h"
 
 #include "Camera/CameraComponent.h"
+
+#include "Components/AudioComponent.h"
+#include "Components/SphereComponent.h"
+
 #include "Core/Actors/Player/RG_PlayerController.h"
 #include "Core/Data/Ragdoll/LiveRagdollBoneDataAsset.h"
 #include "Core/Functional/Libraries/LiveRagdollHelperLib.h"
@@ -13,7 +17,8 @@
 
 #include "Core/Functional/Libraries/CommonBlueprintFunctionLibrary.h"
 
-#define LEG_LENGTH_MULT 1.25f
+#define LEG_LENGTH_HEIGHT_MULT 0.75f
+#define LEG_LENGTH_DIST_MULT 2.f
 #define ARM_LENGTH_MULT 1.5f
 #define HANDLE_INTERP 10.0f
 
@@ -64,6 +69,15 @@ ARG_PlayerCharacter::ARG_PlayerCharacter()
 	Camera = CreateDefaultSubobject<UCameraComponent>("Camera");
 	Camera->SetupAttachment(Boom);
 
+	Skeleton->SetCollisionProfileName(FName("Pawn"));
+	Skeleton->SetNotifyRigidBodyCollision(true);
+	Skeleton->SetBodyNotifyRigidBodyCollision(true, LiveRigTargetPoints["Head"].BoneTarget);
+	Skeleton->OnComponentHit.AddDynamic(this, &ARG_PlayerCharacter::OnHeadCollision);
+
+	AudioPlayer = CreateDefaultSubobject<UAudioComponent>("AudioPlayer");
+	AudioPlayer->SetupAttachment(Root);
+	AudioPlayer->bCanPlayMultipleInstances = true;
+
 }
 
 void ARG_PlayerCharacter::MoveLeftFoot(const FVector& NewPosition)
@@ -85,7 +99,7 @@ void ARG_PlayerCharacter::UpdateTargetPositions()
 	
 	const FVector MidPoint = (LeftFootPos + RightFootPos) * 0.5f;
 	LiveRigTargetPoints["Waist"].Target->SetWorldLocation(FVector{MidPoint.X, MidPoint.Y, std::min(LeftFootPos.Z, RightFootPos.Z) + WaistHeight});
-	LiveRigTargetPoints["Head"].Target->SetWorldLocation(FVector{MidPoint.X, MidPoint.Y, std::min(LeftFootPos.Z, RightFootPos.Z) + WaistHeight * 1.25f});
+	LiveRigTargetPoints["Head"].Target->SetWorldLocation(FVector{MidPoint.X, MidPoint.Y, std::min(LeftFootPos.Z, RightFootPos.Z) + WaistHeight * 1.5f});
 }
 
 // Called when the game starts or when spawned
@@ -93,7 +107,7 @@ void ARG_PlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	StartRagdoll();
-	
+
 }
 
 // Called every frame
@@ -135,13 +149,8 @@ void ARG_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 
 void ARG_PlayerCharacter::StartRagdoll()
 {
-	//GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	
-	Skeleton->SetCollisionObjectType(ECC_Pawn);
-	Skeleton->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
-	
+	// Enable Collisions
 	ULiveRagdollHelperLib::EnableBoneLive(Skeleton, "Waist", FLiveRagdollBoneData{ 1.f, true, true});
-	bIsRagdolling = true;
 
 	TArray<FString> KeysToRemove;
 	
@@ -151,15 +160,22 @@ void ARG_PlayerCharacter::StartRagdoll()
 		if (FLiveRigBoneData* BoneData = LiveRigBoneData->BoneDataMap.Find(LiveRigData.Key))
 		{
 			FLiveRigTargetData& TargetData = LiveRigData.Value;
+
+			// Get actual bone name
 			TargetData.BoneTarget = BoneData->BoneName;
+
+			// Create new physicsHandle
 			TargetData.PhysicsHandle = NewObject<UPhysicsHandleComponent>(this, FName(*FString::Printf(TEXT("%s_PhysicsHandle"), *LiveRigData.Key)));
 			TargetData.PhysicsHandle->RegisterComponent();
 			TargetData.PhysicsHandle->InterpolationSpeed = HANDLE_INTERP;
+
+			// Find Bone Position and grab it via physics components
 			FVector BonePos = Skeleton->GetBoneLocation(TargetData.BoneTarget, EBoneSpaces::WorldSpace);
+			TargetData.PhysicsHandle->GrabComponentAtLocation(Skeleton, TargetData.BoneTarget, BonePos);
+			
 			UE_LOG(LogTemp, Warning, TEXT("Grabbing %s | Simulating: %d"),
 	*TargetData.BoneTarget.ToString(),
 	Skeleton->IsSimulatingPhysics(TargetData.BoneTarget));
-			TargetData.PhysicsHandle->GrabComponentAtLocation(Skeleton, TargetData.BoneTarget, BonePos);
 		}
 		else
 			KeysToRemove.Add(LiveRigData.Key);
@@ -170,6 +186,8 @@ void ARG_PlayerCharacter::StartRagdoll()
 	
 	LiveRigTargetPoints["LeftHand"].PhysicsHandle->ReleaseComponent();
 	LiveRigTargetPoints["RightHand"].PhysicsHandle->ReleaseComponent();
+	LiveRigTargetPoints["Head"].PhysicsHandle->LinearDamping = 0.5f;
+	LiveRigTargetPoints["Waist"].PhysicsHandle->LinearDamping = 0.5f;
 	
 	// Find feet and thigh bones
 	
@@ -180,7 +198,7 @@ void ARG_PlayerCharacter::StartRagdoll()
 			const FVector ThighPos = Skeleton->GetBoneLocation(Thigh->BoneName, EBoneSpaces::WorldSpace);
 			const FVector FeetPos = Skeleton->GetBoneLocation(Foot->BoneName, EBoneSpaces::WorldSpace);
 			
-			LegLength = UKismetMathLibrary::Vector_Distance(ThighPos, FeetPos) * LEG_LENGTH_MULT;
+			LegLength = UKismetMathLibrary::Vector_Distance(ThighPos, FeetPos);
 			bThighLocated = true;
 		}
 	
@@ -189,7 +207,6 @@ void ARG_PlayerCharacter::StartRagdoll()
 	if ( const FLiveRigBoneData* Shoulder = LiveRigBoneData->BoneDataMap.Find("LeftShoulder"))
 		if ( const FLiveRigBoneData* Hand = LiveRigBoneData->BoneDataMap.Find("LeftHand"))
 		{
-			// freaky ass code
 			const FVector ShoulderPos = Skeleton->GetBoneLocation(Shoulder->BoneName, EBoneSpaces::WorldSpace);
 			const FVector HandPos = Skeleton->GetBoneLocation(Hand->BoneName, EBoneSpaces::WorldSpace);
 			
@@ -200,6 +217,11 @@ void ARG_PlayerCharacter::StartRagdoll()
 
 void ARG_PlayerCharacter::Kill()
 {
+	bIsDead = true;
+
+	AudioPlayer->SetSound(DeathSound);
+	AudioPlayer->Play();
+	
 	for (auto& LiveRigData : LiveRigTargetPoints)
 	{
 		FLiveRigTargetData& BoneData = LiveRigData.Value;
@@ -225,7 +247,7 @@ void ARG_PlayerCharacter::LiftLeg(const bool bRightLeg)
 	if (bThighLocated)
 	{
 		FVector ThighPos = Skeleton->GetBoneLocation(LiveRigBoneData->BoneDataMap[(bRightLeg) ? "RightThigh" : "LeftThigh"].BoneName, EBoneSpaces::WorldSpace);
-		FVector EndPos = ThighPos + FVector(0.0f, 0.f, LegLength);
+		FVector EndPos = ThighPos + FVector(0.0f, 0.f, LegLength * LEG_LENGTH_HEIGHT_MULT);
 		LiveRigTargetPoints[(bRightLeg) ? "RightFoot" : "LeftFoot"].Target->SetWorldLocation(EndPos);
 		
 		if (bRightLeg)
@@ -237,6 +259,15 @@ void ARG_PlayerCharacter::LiftLeg(const bool bRightLeg)
 		{
 			LeftFootLiftedPos = EndPos;
 			bLeftLegLifted = true;
+		}
+
+		if (bLeftLegLifted && bRightLegLifted && !bHeadDetached)
+		{
+			bHeadDetached = true;
+			LiveRigTargetPoints["Head"].PhysicsHandle->ReleaseComponent();
+			LiveRigTargetPoints["Waist"].PhysicsHandle->ReleaseComponent();
+			LiveRigTargetPoints["LeftFoot"].PhysicsHandle->ReleaseComponent();
+			LiveRigTargetPoints["RightFoot"].PhysicsHandle->ReleaseComponent();
 		}
 	}
 }
@@ -256,13 +287,13 @@ void ARG_PlayerCharacter::SteerFeet(const FVector2D& Direction)
 	if (bLeftLegLifted)
 	{
 		LiveRigTargetPoints["LeftFoot"].Target->SetWorldLocation
-		(LeftFootLiftedPos + TranslatedDirection * LegLength);
+		(LeftFootLiftedPos + TranslatedDirection * LegLength * LEG_LENGTH_DIST_MULT);
 	}
 	
 	if (bRightLegLifted)
 	{
 		LiveRigTargetPoints["RightFoot"].Target->SetWorldLocation
-		(RightFootLiftedPos + TranslatedDirection * LegLength);
+		(RightFootLiftedPos + TranslatedDirection * LegLength * LEG_LENGTH_DIST_MULT);
 	}
 }
 
@@ -292,6 +323,13 @@ void ARG_PlayerCharacter::GrabBone(FLiveRigTargetData& RigData)
 	RigData.PhysicsHandle->GrabComponentAtLocation(Skeleton, RigData.BoneTarget, BoneLocation);
 }
 
+void ARG_PlayerCharacter::OnHeadCollision(UPrimitiveComponent* HitComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& HitResult)
+{
+	UE_LOG(LogTemp, Warning, TEXT("HEAD HIT!"));
+	Kill();
+}
+
 void ARG_PlayerCharacter::DropLeg(const bool bRightLeg)
 {
 	FVector StartingPos = LiveRigTargetPoints[(bRightLeg) ? "RightFoot" : "LeftFoot"].Target->GetComponentLocation();
@@ -311,6 +349,15 @@ void ARG_PlayerCharacter::DropLeg(const bool bRightLeg)
 		bRightLegLifted = false;
 	else
 		bLeftLegLifted = false;
+
+	if (bHeadDetached && !bIsDead)
+	{
+		bHeadDetached = false;
+		GrabBone(LiveRigTargetPoints["Head"]);
+		GrabBone(LiveRigTargetPoints["Waist"]);
+		GrabBone(LiveRigTargetPoints["LeftFoot"]);
+		GrabBone(LiveRigTargetPoints["RightFoot"]);
+	}
 }
 
 void ARG_PlayerCharacter::LiftArm(const bool bRightArm)

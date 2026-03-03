@@ -30,6 +30,9 @@ class RYLEYGETSMILK_API ARG_PlayerCharacter : public APawn
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	class ULiveRagdollBoneDataAsset* LiveRigBoneData;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	class USoundBase* DeathSound = nullptr;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Live Ragdoll Settings");
 	float WaistHeight = 100.f;
@@ -93,11 +96,6 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Controls")
 	void UpdateArmPos();
-
-	
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	bool bIsRagdolling = false;
 	
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Player Components", meta = (AllowPrivateAccess = true))
@@ -111,6 +109,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Components", meta = (AllowPrivateAccess = true))
 	class USceneComponent* Root;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player Components", meta = (AllowPrivateAccess = true))
+	class UAudioComponent* AudioPlayer;
 	
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
@@ -153,6 +154,12 @@ private:
 	bool bLeftArmLifted = false;
 	UPROPERTY()
 	bool bRightArmLifted = false;
+
+	UPROPERTY()
+	bool bHeadDetached = false;
+
+	UPROPERTY()
+	bool bIsDead = false;
 	
 private:
 	float LegLength = 0.f;
@@ -163,4 +170,8 @@ private:
 private:
 	UFUNCTION()
 	void GrabBone(FLiveRigTargetData& RigData);
+
+	UFUNCTION()
+	void OnHeadCollision(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent,
+		FVector NormalImpulse, const FHitResult& HitResult);
 };

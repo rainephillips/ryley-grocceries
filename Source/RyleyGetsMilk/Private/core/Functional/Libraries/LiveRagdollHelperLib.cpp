@@ -46,12 +46,12 @@ bool ULiveRagdollHelperLib::DisableBoneLive(class USkeletalMeshComponent* Mesh, 
 }
 
 bool ULiveRagdollHelperLib::AttachActorToSocketByName(AActor* Actor, class USkeletalMeshComponent* Mesh,
-	const FName& SocketName, bool bUpdateCollision, bool bCollisionEnabled)
+	const FName& SocketName, bool bSnapToTarget, bool bUpdateCollision, bool bCollisionEnabled)
 {
 	if (!IsValid(Actor) || !IsValid(Mesh))
 		return false;
 	
-	Actor->AttachToComponent(Mesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, SocketName);
+	Actor->AttachToComponent(Mesh, bSnapToTarget ? FAttachmentTransformRules::SnapToTargetNotIncludingScale : FAttachmentTransformRules::KeepRelativeTransform, SocketName);
 	
 	if (bUpdateCollision)
 		Actor->SetActorEnableCollision(bCollisionEnabled);
