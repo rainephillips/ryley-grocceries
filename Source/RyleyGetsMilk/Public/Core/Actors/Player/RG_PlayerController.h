@@ -36,9 +36,6 @@ private:
 	
 	UFUNCTION()
 	void Look(const FInputActionValue& Value);
-
-	UFUNCTION()
-	void MoveLimb(const FInputActionValue& Value);
 	
 	UFUNCTION()
 	void SteerFeet(const FInputActionValue& Value);

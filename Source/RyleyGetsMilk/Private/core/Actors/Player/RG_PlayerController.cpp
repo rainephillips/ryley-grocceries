@@ -101,16 +101,6 @@ void ARG_PlayerController::Look(const FInputActionValue& Value)
 	}
 }
 
-void ARG_PlayerController::MoveLimb(const FInputActionValue& Value)
-{
-	const FVector Axis = Value.Get<FVector>();
-
-	if (!Axis.IsNearlyZero() && IsValid(PlayerCharacter))
-	{
-		PlayerCharacter->MoveLimb(Axis);
-	}
-}
-
 void ARG_PlayerController::SteerFeet(const FInputActionValue& Value)
 {
 	const FVector2D Axis = Value.Get<FVector2D>();

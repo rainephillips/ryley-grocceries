@@ -75,9 +75,6 @@ public:
 public:
 	UFUNCTION(BlueprintCallable, Category = "Controls")
 	void Look(const FVector2D& Direction);
-
-	UFUNCTION(BlueprintCallable, Category = "Controls")
-	void MoveLimb(const FVector& Direction);
 	
 	UFUNCTION(BlueprintCallable, Category = "Controls")
 	void LiftLeg(const bool bRightLeg);

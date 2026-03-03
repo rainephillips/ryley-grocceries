@@ -186,8 +186,10 @@ void ARG_PlayerCharacter::StartRagdoll()
 	
 	LiveRigTargetPoints["LeftHand"].PhysicsHandle->ReleaseComponent();
 	LiveRigTargetPoints["RightHand"].PhysicsHandle->ReleaseComponent();
-	LiveRigTargetPoints["Head"].PhysicsHandle->LinearDamping = 0.5f;
-	LiveRigTargetPoints["Waist"].PhysicsHandle->LinearDamping = 0.5f;
+	LiveRigTargetPoints["Head"].PhysicsHandle->SetLinearDamping(0.5f);
+	LiveRigTargetPoints["Head"].PhysicsHandle->SetLinearStiffness(.5f);
+	LiveRigTargetPoints["Waist"].PhysicsHandle->SetLinearDamping(0.5f);
+	LiveRigTargetPoints["Waist"].PhysicsHandle->SetLinearStiffness(500.f);
 	
 	// Find feet and thigh bones
 	
@@ -217,6 +219,9 @@ void ARG_PlayerCharacter::StartRagdoll()
 
 void ARG_PlayerCharacter::Kill()
 {
+	if (bIsDead)
+		return;
+	
 	bIsDead = true;
 
 	AudioPlayer->SetSound(DeathSound);
@@ -235,15 +240,12 @@ void ARG_PlayerCharacter::Look(const FVector2D& Direction)
 	AddControllerPitchInput(Direction.Y);
 }
 
-void ARG_PlayerCharacter::MoveLimb(const FVector& Direction)
-{
-	FVector Forward = UKismetMathLibrary::GetForwardVector(GetControlRotation());
-	
-	LRT_LeftFoot->AddWorldOffset(Forward);
-}
 
 void ARG_PlayerCharacter::LiftLeg(const bool bRightLeg)
 {
+	if (bIsDead)
+		return;
+	
 	if (bThighLocated)
 	{
 		FVector ThighPos = Skeleton->GetBoneLocation(LiveRigBoneData->BoneDataMap[(bRightLeg) ? "RightThigh" : "LeftThigh"].BoneName, EBoneSpaces::WorldSpace);
@@ -274,6 +276,9 @@ void ARG_PlayerCharacter::LiftLeg(const bool bRightLeg)
 
 void ARG_PlayerCharacter::SteerFeet(const FVector2D& Direction)
 {
+	if (bIsDead)
+		return;
+	
 	const FVector Forward = UKismetMathLibrary::GetForwardVector(GetControlRotation());
 	const FVector Right   = UKismetMathLibrary::GetRightVector(GetControlRotation());
 
@@ -332,6 +337,9 @@ void ARG_PlayerCharacter::OnHeadCollision(UPrimitiveComponent* HitComponent, AAc
 
 void ARG_PlayerCharacter::DropLeg(const bool bRightLeg)
 {
+	if (bIsDead)
+		return;
+	
 	FVector StartingPos = LiveRigTargetPoints[(bRightLeg) ? "RightFoot" : "LeftFoot"].Target->GetComponentLocation();
 	
 	bool bDidHit;
@@ -362,6 +370,9 @@ void ARG_PlayerCharacter::DropLeg(const bool bRightLeg)
 
 void ARG_PlayerCharacter::LiftArm(const bool bRightArm)
 {
+	if (bIsDead)
+		return;
+	
 	GrabBone(LiveRigTargetPoints[(bRightArm) ? "RightHand" : "LeftHand"]);
 	
 	if (bRightArm)
@@ -373,6 +384,9 @@ void ARG_PlayerCharacter::LiftArm(const bool bRightArm)
 
 void ARG_PlayerCharacter::DropArm(const bool bRightArm)
 {
+	if (bIsDead)
+		return;
+	
 	LiveRigTargetPoints[(bRightArm) ? "RightHand" : "LeftHand"].PhysicsHandle->ReleaseComponent();
 	
 	if (bRightArm)
