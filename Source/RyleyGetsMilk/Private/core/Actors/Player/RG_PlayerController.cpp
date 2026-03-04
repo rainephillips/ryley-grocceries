@@ -71,12 +71,12 @@ void ARG_PlayerController::BindActions(class ARG_PlayerCharacter* InPlayerCharac
 
 		if (const UInputAction* Action = InputConfig->Find("LeftDrop"))
 		{
-			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, PlayerCharacter, &ARG_PlayerCharacter::DropItem, false);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, PlayerCharacter, &ARG_PlayerCharacter::DropItem, false, false);
 		}
 		
 		if (const UInputAction* Action = InputConfig->Find("RightDrop"))
 		{
-			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, PlayerCharacter, &ARG_PlayerCharacter::DropItem, true);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, PlayerCharacter, &ARG_PlayerCharacter::DropItem, true, false);
 		}
 
 		if (const UInputAction* Action = InputConfig->Find("DebugSave"))

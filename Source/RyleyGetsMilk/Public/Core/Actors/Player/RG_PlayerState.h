@@ -63,6 +63,9 @@ private:
 	bool bHeadDetached = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
+	bool bIsInvincible = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Live Ragdoll Targets", meta = (AllowPrivateAccess = true))
 	FPlayerRespawnData RespawnData;
 
 public:
@@ -71,6 +74,12 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	inline bool IsDead() const { return !bIsAlive; }
+
+	UFUNCTION(BlueprintCallable)
+	inline bool IsInvincible() const { return bIsInvincible; }
+
+	UFUNCTION(BlueprintCallable)
+	inline void RevertInvincibility() { bIsInvincible = false; }
 
 	UFUNCTION(BlueprintCallable)
 	bool HasMilk() const;

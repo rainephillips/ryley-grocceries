@@ -33,10 +33,22 @@ public:
 	class ULiveRagdollBoneDataAsset* LiveRigBoneData;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float RespawnInvincibilityTime = 3.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float TimeBeforeRespawn = 3.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class USoundBase* DeathSound = nullptr;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
 	class ARG_PlayerState* GamePlayerState = nullptr;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+	bool bCanPlayerRespawn = true;
+
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+	int32 DeathCount = 0;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Live Ragdoll Settings");
 	float WaistHeight = 100.f;
@@ -93,7 +105,7 @@ public:
 	void DropArm(const bool bRightArm);
 
 	UFUNCTION(BlueprintCallable, Category = "Controls")
-	void DropItem(const bool bRightArm);
+	void DropItem(const bool bRightArm, const bool bForceDrop = false);
 	
 	UFUNCTION(BlueprintCallable, Category = "Controls")
 	void SteerFeet(const FVector2D& Direction);
@@ -155,6 +167,15 @@ private:
 	
 	UPROPERTY()
 	FVector LeftFootLiftedPos;
+
+	UPROPERTY()
+	FVector RightFootLastPos;
+	
+	UPROPERTY()
+	FVector LeftFootLastPos;
+
+	UPROPERTY()
+	FTimerHandle TimerHandle;
 	
 private:
 	float LegLength = 0.f;

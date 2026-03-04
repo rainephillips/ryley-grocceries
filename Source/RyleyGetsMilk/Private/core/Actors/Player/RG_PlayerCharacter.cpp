@@ -122,6 +122,7 @@ void ARG_PlayerCharacter::BeginPlay()
 	
 	StartRagdoll();
 
+	SavePlayerLocation();
 }
 
 // Called every frame
@@ -235,6 +236,9 @@ void ARG_PlayerCharacter::Kill()
 {
 	if (!GamePlayerState || GamePlayerState->IsDead())
 		return;
+
+	if (GamePlayerState->IsInvincible())
+		return;
 	
 	GamePlayerState->bIsAlive = false;
 
@@ -255,6 +259,16 @@ void ARG_PlayerCharacter::Kill()
 	}
 
 	Boom->AttachToComponent(Skeleton, FAttachmentTransformRules::SnapToTargetNotIncludingScale, LiveRigTargetPoints["Waist"].BoneTarget);
+
+	DeathCount++;
+
+	if (bCanPlayerRespawn)
+	{
+		DropItem(false, true);
+		DropItem(true, true);
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ARG_PlayerCharacter::LoadPlayerLocation, TimeBeforeRespawn);
+	}
+		
 }
 
 void ARG_PlayerCharacter::Look(const FVector2D& Direction)
@@ -273,6 +287,9 @@ void ARG_PlayerCharacter::LiftLeg(const bool bRightLeg)
 	{
 		FVector ThighPos = Skeleton->GetBoneLocation(LiveRigBoneData->BoneDataMap[(bRightLeg) ? "RightThigh" : "LeftThigh"].BoneName, EBoneSpaces::WorldSpace);
 		FVector EndPos = ThighPos + FVector(0.0f, 0.f, LegLength * LEG_LENGTH_HEIGHT_MULT);
+
+		FVector& LastFootPos = (bRightLeg) ? RightFootLastPos : LeftFootLastPos;
+		LastFootPos = LiveRigTargetPoints[(bRightLeg) ? "RightFoot" : "LeftFoot"].Target->GetComponentLocation();
 		LiveRigTargetPoints[(bRightLeg) ? "RightFoot" : "LeftFoot"].Target->SetWorldLocation(EndPos);
 		
 		if (bRightLeg)
@@ -365,12 +382,26 @@ void ARG_PlayerCharacter::LoadPlayerLocation()
 	if (!GamePlayerState)
 		return;
 
+	GamePlayerState->bIsAlive = true;
+	GamePlayerState->bIsInvincible = true;
+
 	const FPlayerRespawnData& Data = GamePlayerState->RespawnData;
 	SetActorLocation(Data.MainLocation);
 	LRT_LeftFoot->SetWorldLocation(Data.LeftFootLocation);
 	LRT_RightFoot->SetWorldLocation(Data.RightFootLocation);
 	LRT_Waist->SetWorldLocation(Data.WaistLocation);
 	LRT_Head->SetWorldLocation(Data.HeadLocation);
+
+	GamePlayerState->bHeadDetached = false;
+	GrabBone(LiveRigTargetPoints["Head"]);
+	GrabBone(LiveRigTargetPoints["Waist"]);
+	GrabBone(LiveRigTargetPoints["LeftFoot"]);
+	GrabBone(LiveRigTargetPoints["RightFoot"]);
+
+	GamePlayerState->bLeftLegLifted = false;
+	GamePlayerState->bRightLegLifted = false;
+
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, GamePlayerState, &ARG_PlayerState::RevertInvincibility, RespawnInvincibilityTime);
 }
 
 void ARG_PlayerCharacter::GrabBone(FLiveRigTargetData& RigData)
@@ -429,6 +460,12 @@ void ARG_PlayerCharacter::DropLeg(const bool bRightLeg)
 		LiveRigTargetPoints[(bRightLeg) ? "RightFoot" : "LeftFoot"].Target->SetWorldLocation(EndPos);
 		UpdateTargetPositions();
 	}
+	else
+	{
+		FVector& LastFootPos = (bRightLeg) ? RightFootLastPos : LeftFootLastPos;
+		LiveRigTargetPoints[(bRightLeg) ? "RightFoot" : "LeftFoot"].Target->SetWorldLocation(LastFootPos);
+		UpdateTargetPositions();
+	}
 	
 	if (bRightLeg)
 		GamePlayerState->bRightLegLifted = false;
@@ -479,9 +516,12 @@ void ARG_PlayerCharacter::DropArm(const bool bRightArm)
 		GamePlayerState->bLeftArmLifted = false;
 }
 
-void ARG_PlayerCharacter::DropItem(const bool bRightArm)
+void ARG_PlayerCharacter::DropItem(const bool bRightArm, const bool bForceDrop)
 {
-	if (!GamePlayerState || GamePlayerState->IsDead())
+	if (!GamePlayerState)
+		return;
+
+	if (!bForceDrop && GamePlayerState->IsDead())
 		return;
 
 	if (ARG_ItemBase*& Item = (bRightArm) ? GamePlayerState->RightHandItem : GamePlayerState->LeftHandItem; !Item)
