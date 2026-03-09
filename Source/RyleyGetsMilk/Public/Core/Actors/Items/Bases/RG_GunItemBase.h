@@ -14,6 +14,9 @@ class RYLEYGETSMILK_API ARG_GunItemBase : public ARG_ItemBase
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun Item Data")
 	float Damage = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun Item Data")
+	TSubclassOf<AActor> BulletClass;
 	
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)

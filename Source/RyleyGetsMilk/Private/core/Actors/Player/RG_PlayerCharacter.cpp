@@ -241,6 +241,7 @@ void ARG_PlayerCharacter::Kill()
 		return;
 	
 	GamePlayerState->bIsAlive = false;
+	OnPlayerDied.Broadcast();
 
 	AudioPlayer->SetSound(DeathSound);
 	AudioPlayer->Play();
@@ -385,6 +386,8 @@ void ARG_PlayerCharacter::LoadPlayerLocation()
 	GamePlayerState->bIsAlive = true;
 	GamePlayerState->bIsInvincible = true;
 
+	OnPlayerRespawned.Broadcast();
+
 	const FPlayerRespawnData& Data = GamePlayerState->RespawnData;
 	SetActorLocation(Data.MainLocation);
 	LRT_LeftFoot->SetWorldLocation(Data.LeftFootLocation);
@@ -413,6 +416,9 @@ void ARG_PlayerCharacter::GrabBone(FLiveRigTargetData& RigData)
 void ARG_PlayerCharacter::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& HitResult)
 {
+	if (!GamePlayerState || GamePlayerState->IsDead())
+		return;
+	
 	if (HitResult.MyBoneName == LiveRigTargetPoints["Head"].BoneTarget)
 	{
 		// Ignore items cause thats just not fun :P

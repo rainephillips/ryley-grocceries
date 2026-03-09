@@ -6,6 +6,9 @@
 #include "GameFramework/Pawn.h"
 #include "RG_PlayerCharacter.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerDied);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerRespawned);
+
 
 USTRUCT(BlueprintType)
 struct FLiveRigTargetData
@@ -52,6 +55,13 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Live Ragdoll Settings");
 	float WaistHeight = 100.f;
+
+public:
+	UPROPERTY(VisibleInstanceOnly, BlueprintAssignable, Category = "Events")
+	FOnPlayerDied OnPlayerDied;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintAssignable, Category = "Events")
+	FOnPlayerRespawned OnPlayerRespawned;
 
 public:
 	// Sets default values for this character's properties

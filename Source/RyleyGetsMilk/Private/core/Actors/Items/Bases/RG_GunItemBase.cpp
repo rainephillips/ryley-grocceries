@@ -30,7 +30,13 @@ void ARG_GunItemBase::Shoot_Implementation()
 	bool bDidHit = false;
 	
 	UCommonBlueprintFunctionLibrary::LineTraceInFrontOfObject(Barrel, FVector::ZeroVector, 10000.f, FRotator::ZeroRotator,
-		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Pawn), TArray<AActor*>{ItemUser}, true, true, Hits, FirstHit, bDidHit);
+		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Pawn), TArray<AActor*>{ItemUser}, true, false, Hits, FirstHit, bDidHit);
+
+	if (IsValid(BulletClass))
+	{
+		AActor* Bullet = GetWorld()->SpawnActor<AActor>(BulletClass, Barrel->GetComponentLocation(), Barrel->GetComponentRotation());
+	}
+		
 
 	if (!bDidHit)
 		return;
