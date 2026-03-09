@@ -3,12 +3,9 @@
 
 #include "Core/Actors/Player/RG_PlayerCharacter.h"
 
-#include "MovieSceneTracksComponentTypes.h"
-
 #include "Camera/CameraComponent.h"
 
 #include "Components/AudioComponent.h"
-#include "Components/SphereComponent.h"
 
 #include "Core/Actors/Items/RG_ItemBase.h"
 #include "Core/Actors/Player/RG_PlayerController.h"
@@ -130,6 +127,9 @@ void ARG_PlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
+	if (bIsPlayerTripped)
+		TripTimer -= DeltaTime;
+	
 	UpdateArmPos();
 	
 }
@@ -187,10 +187,6 @@ void ARG_PlayerCharacter::StartRagdoll()
 			// Find Bone Position and grab it via physics components
 			FVector BonePos = Skeleton->GetBoneLocation(TargetData.BoneTarget, EBoneSpaces::WorldSpace);
 			TargetData.PhysicsHandle->GrabComponentAtLocation(Skeleton, TargetData.BoneTarget, BonePos);
-			
-			UE_LOG(LogTemp, Warning, TEXT("Grabbing %s | Simulating: %d"),
-	*TargetData.BoneTarget.ToString(),
-	Skeleton->IsSimulatingPhysics(TargetData.BoneTarget));
 		}
 		else
 			KeysToRemove.Add(LiveRigData.Key);
@@ -284,6 +280,9 @@ void ARG_PlayerCharacter::LiftLeg(const bool bRightLeg)
 	if (!GamePlayerState || GamePlayerState->IsDead())
 		return;
 	
+	if (bIsPlayerTripped)
+		return;
+	
 	if (bThighLocated)
 	{
 		FVector ThighPos = Skeleton->GetBoneLocation(LiveRigBoneData->BoneDataMap[(bRightLeg) ? "RightThigh" : "LeftThigh"].BoneName, EBoneSpaces::WorldSpace);
@@ -363,6 +362,42 @@ void ARG_PlayerCharacter::UpdateArmPos()
 	}
 }
 
+void ARG_PlayerCharacter::TripPlayer()
+{
+	bIsPlayerTripped = true;
+	TripTimer = TripLength;
+	
+	Boom->AttachToComponent(Skeleton, FAttachmentTransformRules::SnapToTargetNotIncludingScale, LiveRigTargetPoints["Waist"].BoneTarget);
+	
+	LiveRigTargetPoints["Head"].PhysicsHandle->ReleaseComponent();
+	LiveRigTargetPoints["Waist"].PhysicsHandle->ReleaseComponent();
+	LiveRigTargetPoints["LeftFoot"].PhysicsHandle->ReleaseComponent();
+	LiveRigTargetPoints["RightFoot"].PhysicsHandle->ReleaseComponent();
+	
+	UE_LOG(LogTemp, Warning, TEXT("ReleaseLumbs"));
+}
+
+void ARG_PlayerCharacter::UnTripPlayer()
+{
+	bIsPlayerTripped = false;
+	
+	bTripStepImmunity = 2;
+	
+	AttachTargetsToBoneLocations();
+	
+	Boom->AttachToComponent(LRT_Waist, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	
+	GrabBone(LiveRigTargetPoints["Head"]);
+	GrabBone(LiveRigTargetPoints["Waist"]);
+	GrabBone(LiveRigTargetPoints["LeftFoot"]);
+	GrabBone(LiveRigTargetPoints["RightFoot"]);
+}
+
+void ARG_PlayerCharacter::AddForce(const FVector& Force)
+{
+	Skeleton->AddForceToAllBodiesBelow(Force, LiveRigTargetPoints["Waist"].BoneTarget, true, true);
+}
+
 void ARG_PlayerCharacter::SavePlayerLocation()
 {
 	if (!GamePlayerState)
@@ -403,6 +438,8 @@ void ARG_PlayerCharacter::LoadPlayerLocation()
 
 	GamePlayerState->bLeftLegLifted = false;
 	GamePlayerState->bRightLegLifted = false;
+	
+	Boom->AttachToComponent(LRT_Waist, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, GamePlayerState, &ARG_PlayerState::RevertInvincibility, RespawnInvincibilityTime);
 }
@@ -413,14 +450,35 @@ void ARG_PlayerCharacter::GrabBone(FLiveRigTargetData& RigData)
 	RigData.PhysicsHandle->GrabComponentAtLocation(Skeleton, RigData.BoneTarget, BoneLocation);
 }
 
+void ARG_PlayerCharacter::AttachTargetsToBoneLocations()
+{
+	for (auto& LiveRigData : LiveRigTargetPoints)
+	{
+		FLiveRigTargetData& BoneData = LiveRigData.Value;
+		
+		const FVector BonePos = Skeleton->GetBoneLocation(BoneData.BoneTarget, EBoneSpaces::WorldSpace);
+		BoneData.Target->SetWorldLocation(BonePos);
+	}
+}
+
 void ARG_PlayerCharacter::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& HitResult)
+                                UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& HitResult)
 {
 	if (!GamePlayerState || GamePlayerState->IsDead())
 		return;
 	
+	if (bIsPlayerTripped)
+	{
+		if (TripTimer <= 0.f)
+			UnTripPlayer();
+		return;
+	}
+	
 	if (HitResult.MyBoneName == LiveRigTargetPoints["Head"].BoneTarget)
 	{
+		if (bTripStepImmunity > 0)
+			return;
+		
 		// Ignore items cause thats just not fun :P
 		if (IsValid(OtherActor) && OtherActor->ActorHasTag("Item"))
 			return;
@@ -454,10 +512,13 @@ void ARG_PlayerCharacter::DropLeg(const bool bRightLeg)
 	if (!GamePlayerState || GamePlayerState->IsDead())
 		return;
 	
-	FVector StartingPos = LiveRigTargetPoints[(bRightLeg) ? "RightFoot" : "LeftFoot"].Target->GetComponentLocation();
+	if (bTripStepImmunity)
+		bTripStepImmunity--;
+	
+	const FVector StartingPos = LiveRigTargetPoints[(bRightLeg) ? "RightFoot" : "LeftFoot"].Target->GetComponentLocation();
 	
 	bool bDidHit;
-	FVector EndPos = UCommonBlueprintFunctionLibrary::GetFirstHitLocation(this, StartingPos, FVector{0.f, 0.f, -1.f}, 
+	const FVector EndPos = UCommonBlueprintFunctionLibrary::GetFirstHitLocation(this, StartingPos, FVector{0.f, 0.f, -1.f}, 
 		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Pawn), bDidHit, TArray<AActor*>{this});
 	
 	

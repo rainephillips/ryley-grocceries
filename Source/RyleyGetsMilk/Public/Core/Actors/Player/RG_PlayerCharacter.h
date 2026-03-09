@@ -49,6 +49,18 @@ public:
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
 	bool bCanPlayerRespawn = true;
+	
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+	bool bIsPlayerTripped = false;
+	
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
+	uint8 bTripStepImmunity = 0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float TripLength = 5.f;
+	
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite)
+	float TripTimer = 0.f;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
 	int32 DeathCount = 0;
@@ -122,6 +134,15 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Controls")
 	void UpdateArmPos();
+	
+	UFUNCTION(BlueprintCallable, Category = "Controls")
+	void TripPlayer();
+	
+	UFUNCTION(BlueprintCallable, Category = "Controls")
+	void UnTripPlayer();
+	
+	UFUNCTION(BlueprintCallable, Category = "Controls")
+	void AddForce(const FVector& Force);
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Respawn Handling")
@@ -196,6 +217,9 @@ private:
 private:
 	UFUNCTION()
 	void GrabBone(FLiveRigTargetData& RigData);
+	
+	UFUNCTION()
+	void AttachTargetsToBoneLocations();
 
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent,
