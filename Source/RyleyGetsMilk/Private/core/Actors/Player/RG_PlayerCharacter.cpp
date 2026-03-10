@@ -203,10 +203,8 @@ void ARG_PlayerCharacter::StartRagdoll()
 	
 	LiveRigTargetPoints["LeftHand"].PhysicsHandle->ReleaseComponent();
 	LiveRigTargetPoints["RightHand"].PhysicsHandle->ReleaseComponent();
-	LiveRigTargetPoints["Head"].PhysicsHandle->SetLinearDamping(0.5f);
-	LiveRigTargetPoints["Head"].PhysicsHandle->SetLinearStiffness(.5f);
-	LiveRigTargetPoints["Waist"].PhysicsHandle->SetLinearDamping(0.5f);
-	LiveRigTargetPoints["Waist"].PhysicsHandle->SetLinearStiffness(500.f);
+	LiveRigTargetPoints["Head"].PhysicsHandle->SetLinearStiffness(75.f);
+	LiveRigTargetPoints["Waist"].PhysicsHandle->SetLinearStiffness(100.f);
 	
 	// Find feet and thigh bones
 	
@@ -401,8 +399,8 @@ void ARG_PlayerCharacter::UnTripPlayer()
 		AttachTargetsToBoneLocations();
 		GamePlayerState->bLeftLegLifted = true;
 		GamePlayerState->bRightLegLifted = true;
-		DropLeg(false);
-		DropLeg(true);
+		DropLeg(false, true);
+		DropLeg(true, true);
 	}
 		
 	
@@ -553,7 +551,7 @@ void ARG_PlayerCharacter::OnHit(UPrimitiveComponent* HitComponent, AActor* Other
 	
 }
 
-void ARG_PlayerCharacter::DropLeg(const bool bRightLeg)
+void ARG_PlayerCharacter::DropLeg(const bool bRightLeg, const bool bForceDrop)
 {
 	if (!GamePlayerState || GamePlayerState->IsDead())
 		return;
@@ -565,7 +563,7 @@ void ARG_PlayerCharacter::DropLeg(const bool bRightLeg)
 	
 	bool bDidHit;
 	const FVector EndPos = UCommonBlueprintFunctionLibrary::GetFirstHitLocation(this, StartingPos, FVector{0.f, 0.f, -1.f}, 
-		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Pawn), bDidHit, TArray<AActor*>{this}, true, false, LegLength * LEG_LENGTH_DROP_MULT);
+		UEngineTypes::ConvertToTraceType(ECollisionChannel::ECC_Pawn), bDidHit, TArray<AActor*>{this}, true, false, (bForceDrop) ? 10000.f : LegLength * LEG_LENGTH_DROP_MULT);
 	
 	
 	if (bDidHit)

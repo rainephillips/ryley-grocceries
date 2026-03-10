@@ -44,15 +44,15 @@ void ARG_PlayerController::BindActions(class ARG_PlayerCharacter* InPlayerCharac
 		if (const UInputAction* Action = InputConfig->Find("LeftFoot"))
 		{
 			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Started, PlayerCharacter, &ARG_PlayerCharacter::LiftLeg, false);
-			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Canceled, PlayerCharacter, &ARG_PlayerCharacter::DropLeg, false);
-			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Completed, PlayerCharacter, &ARG_PlayerCharacter::DropLeg, false);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Canceled, PlayerCharacter, &ARG_PlayerCharacter::DropLeg, false, false);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Completed, PlayerCharacter, &ARG_PlayerCharacter::DropLeg, false, false);
 		}
 		
 		if (const UInputAction* Action = InputConfig->Find("RightFoot"))
 		{
 			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Started, PlayerCharacter, &ARG_PlayerCharacter::LiftLeg, true);
-			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Canceled, PlayerCharacter, &ARG_PlayerCharacter::DropLeg, true);
-			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Completed, PlayerCharacter, &ARG_PlayerCharacter::DropLeg, true);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Canceled, PlayerCharacter, &ARG_PlayerCharacter::DropLeg, true, false);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Completed, PlayerCharacter, &ARG_PlayerCharacter::DropLeg, true, false);
 		}
 		
 		if (const UInputAction* Action = InputConfig->Find("LeftArm"))

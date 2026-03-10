@@ -118,7 +118,7 @@ public:
 	void LiftLeg(const bool bRightLeg);
 	
 	UFUNCTION(BlueprintCallable, Category = "Controls")
-	void DropLeg(const bool bRightLeg);
+	void DropLeg(const bool bRightLeg, const bool bForceDrop = false);
 	
 	UFUNCTION(BlueprintCallable, Category = "Controls")
 	void LiftArm(const bool bRightArm);
