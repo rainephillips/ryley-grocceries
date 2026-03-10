@@ -392,10 +392,21 @@ void ARG_PlayerCharacter::UnTripPlayer()
 {
 	bIsPlayerTripped = false;
 	
-	bTripStepImmunity = 2;
-	
-	if (GamePlayerState && GamePlayerState->IsAlive() && !GamePlayerState->IsInvincible())
+	if (GamePlayerState->IsAlive() && !GamePlayerState->IsInvincible())
+	{
+		bTripStepImmunity = 2;
+		LeftFootLastPos = Skeleton->GetBoneLocation(LiveRigTargetPoints["LeftFoot"].BoneTarget, EBoneSpaces::WorldSpace);
+		RightFootLastPos = Skeleton->GetBoneLocation(LiveRigTargetPoints["RightFoot"].BoneTarget, EBoneSpaces::WorldSpace);
+		
 		AttachTargetsToBoneLocations();
+		GamePlayerState->bLeftLegLifted = true;
+		GamePlayerState->bRightLegLifted = true;
+		DropLeg(false);
+		DropLeg(true);
+	}
+		
+	
+	bTripStepImmunity = 2;
 	
 	Boom->AttachToComponent(LRT_Waist, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	
@@ -550,13 +561,6 @@ void ARG_PlayerCharacter::DropLeg(const bool bRightLeg)
 	if (bRightLeg ? !GamePlayerState->bRightLegLifted : !GamePlayerState->bLeftLegLifted)
 		return;
 	
-	if (bTripStepImmunity)
-		bTripStepImmunity--;
-	
-	if (bIsPlayerTripped)
-		return;
-	
-	
 	const FVector StartingPos = LiveRigTargetPoints[(bRightLeg) ? "RightFoot" : "LeftFoot"].Target->GetComponentLocation();
 	
 	bool bDidHit;
@@ -566,6 +570,12 @@ void ARG_PlayerCharacter::DropLeg(const bool bRightLeg)
 	
 	if (bDidHit)
 	{
+		if (bTripStepImmunity)
+			bTripStepImmunity--;
+	
+		if (bIsPlayerTripped)
+			return;
+		
 		LiveRigTargetPoints[(bRightLeg) ? "RightFoot" : "LeftFoot"].Target->SetWorldLocation(EndPos);
 		UpdateTargetPositions();
 	}
