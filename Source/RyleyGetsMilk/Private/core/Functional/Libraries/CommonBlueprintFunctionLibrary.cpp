@@ -200,9 +200,9 @@ void UCommonBlueprintFunctionLibrary::LineTraceInFrontOfObject(USceneComponent* 
 
 FVector UCommonBlueprintFunctionLibrary::GetFirstHitLocation(UObject* WorldContextObject, const FVector& Start,
                                                              const FVector& Direction, ETraceTypeQuery TraceChannel, bool& bDidHit, TArray<AActor*> Ignored, bool bShowHits,
-                                                             bool bTraceComplex)
+                                                             bool bTraceComplex, float Distance)
 {
-	const FVector End = Start + Direction * 10000.0f;
+	const FVector End = Start + Direction * Distance;
 	
 	const UWorld* World = WorldContextObject->GetWorld();
 	

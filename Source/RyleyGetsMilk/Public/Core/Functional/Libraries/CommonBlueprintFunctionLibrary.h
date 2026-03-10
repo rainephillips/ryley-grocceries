@@ -26,7 +26,7 @@ public:
 								TArray<FHitResult>& Hits, FHitResult& FirstHit, bool& bDidHit);
 
 	UFUNCTION(BlueprintCallable, Category="Tracing", meta=(WorldContext="WorldContextObject"))
-	static FVector GetFirstHitLocation(UObject* WorldContextObject, const FVector& Start, const FVector& Direction, ETraceTypeQuery TraceChannel, bool& bDidHit, TArray<AActor*> Ignored, bool bShowHits = false, bool bTraceComplex = false );
+	static FVector GetFirstHitLocation(UObject* WorldContextObject, const FVector& Start, const FVector& Direction, ETraceTypeQuery TraceChannel, bool& bDidHit, TArray<AActor*> Ignored, bool bShowHits = false, bool bTraceComplex = false, float Distance = 10000.f);
 
 	UFUNCTION(BlueprintCallable, Category="Tracing")
 	static void LineTraceFromMouse(APlayerController* PlayerController, float Distance, ETraceTypeQuery TraceChannel, TArray<AActor*> Ignored, bool bTraceComplex, bool bShowHits,

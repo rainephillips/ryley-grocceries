@@ -208,6 +208,9 @@ private:
 	UPROPERTY()
 	FTimerHandle TimerHandle;
 	
+	UPROPERTY()
+	FTimerHandle ResetLimbTimerHandle;
+	
 private:
 	float LegLength = 0.f;
 	float ArmLength = 0.f;
@@ -220,6 +223,9 @@ private:
 	
 	UFUNCTION()
 	void AttachTargetsToBoneLocations();
+	
+	UFUNCTION()
+	void TeleportBonesToTarget();
 
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent,
