@@ -52,6 +52,7 @@ void APlayerCheckpoint::OnOverlap(class UPrimitiveComponent* OverlappedComponent
 		{
 			if (PlayerCharacter->GamePlayerState->IsAlive())
 			{
+				PlayerCharacter->AttachTargetsToBoneLocations();
 				PlayerCharacter->SavePlayerLocation();
 			}
 		}

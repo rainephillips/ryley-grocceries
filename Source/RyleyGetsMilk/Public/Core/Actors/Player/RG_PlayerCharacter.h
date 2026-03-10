@@ -62,6 +62,9 @@ public:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite)
 	float TripTimer = 0.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float JumpForce = 50000.f;
+
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite)
 	int32 DeathCount = 0;
 	
@@ -105,12 +108,12 @@ public:
 public:
 	UFUNCTION()
 	void StartRagdoll();
-	
-	UFUNCTION()
-	void Kill();
 
 
 public:
+	UFUNCTION(BlueprintCallable, Category = "Controls")
+	void Kill();
+	
 	UFUNCTION(BlueprintCallable, Category = "Controls")
 	void Look(const FVector2D& Direction);
 	
@@ -143,6 +146,9 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "Controls")
 	void AddForce(const FVector& Force);
+
+	UFUNCTION(BlueprintCallable, Category = "Controls")
+	void Jump();
 
 public:
 	UFUNCTION(BlueprintCallable, Category = "Respawn Handling")
@@ -216,13 +222,13 @@ private:
 	float ArmLength = 0.f;
 	bool bThighLocated = false;
 	bool bShoulderLocated = false;
-	
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void AttachTargetsToBoneLocations();
 private:
 	UFUNCTION()
 	void GrabBone(FLiveRigTargetData& RigData);
-	
-	UFUNCTION()
-	void AttachTargetsToBoneLocations();
 	
 	UFUNCTION()
 	void TeleportBonesToTarget();

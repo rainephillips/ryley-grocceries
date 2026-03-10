@@ -20,12 +20,14 @@
 
 #define LEG_LENGTH_HEIGHT_MULT 0.75f
 #define LEG_LENGTH_DIST_MULT 2.f
-#define RESPAWN_ENABLE_RAGDOLL_TIME 0.25f
-#define LEG_LENGTH_DROP_MULT 2.f
+#define RESPAWN_ENABLE_RAGDOLL_TIME 0.5f
+#define LEG_LENGTH_DROP_MULT 4.f
 #define ARM_LENGTH_MULT 1.5f
-#define TRIP_KILL_LIMIT 2.5f
+#define TRIP_KILL_LIMIT 5.5f
 #define FUNNY_RAGDOLL_MULT 10.f
 #define HANDLE_INTERP 10.0f
+#define WAIST_HANDLE_STRENGTH 75.0f
+#define HEAD_HANDLE_STRENGTH 50.0f
 
 // Sets default values
 ARG_PlayerCharacter::ARG_PlayerCharacter()
@@ -171,7 +173,7 @@ void ARG_PlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 void ARG_PlayerCharacter::StartRagdoll()
 {
 	// Enable Collisions
-	ULiveRagdollHelperLib::EnableBoneLive(Skeleton, LiveRigBoneData->BoneDataMap["Waist"].BoneName, FLiveRagdollBoneData{ 1.f, true, true});
+	ULiveRagdollHelperLib::EnableBoneLive(Skeleton, LiveRigBoneData->BoneDataMap["Base"].BoneName, FLiveRagdollBoneData{ 1.f, true, true});
 
 	TArray<FString> KeysToRemove;
 	
@@ -203,8 +205,8 @@ void ARG_PlayerCharacter::StartRagdoll()
 	
 	LiveRigTargetPoints["LeftHand"].PhysicsHandle->ReleaseComponent();
 	LiveRigTargetPoints["RightHand"].PhysicsHandle->ReleaseComponent();
-	LiveRigTargetPoints["Head"].PhysicsHandle->SetLinearStiffness(75.f);
-	LiveRigTargetPoints["Waist"].PhysicsHandle->SetLinearStiffness(100.f);
+	LiveRigTargetPoints["Head"].PhysicsHandle->SetLinearStiffness(HEAD_HANDLE_STRENGTH);
+	LiveRigTargetPoints["Waist"].PhysicsHandle->SetLinearStiffness(WAIST_HANDLE_STRENGTH);
 	
 	// Find feet and thigh bones
 	
@@ -239,6 +241,10 @@ void ARG_PlayerCharacter::Kill()
 
 	if (GamePlayerState->IsInvincible())
 		return;
+
+	if (bIsPlayerTripped)
+		bIsPlayerTripped = false;
+	
 	
 	GamePlayerState->bIsAlive = false;
 	OnPlayerDied.Broadcast();
@@ -350,7 +356,9 @@ void ARG_PlayerCharacter::UpdateArmPos()
 {
 	if (!bShoulderLocated)
 		return;
-	
+
+	if (!GamePlayerState)
+		return;
 	FVector Forward = UKismetMathLibrary::GetForwardVector(GetControlRotation());
 	
 	if (GamePlayerState->bLeftArmLifted)
@@ -368,8 +376,11 @@ void ARG_PlayerCharacter::UpdateArmPos()
 
 void ARG_PlayerCharacter::TripPlayer()
 {
-	bIsPlayerTripped = true;
+	if (!GamePlayerState || GamePlayerState->IsDead())
+		return;
+	
 	TripTimer = TripLength;
+	bIsPlayerTripped = true;
 	
 	Boom->AttachToComponent(Skeleton, FAttachmentTransformRules::SnapToTargetNotIncludingScale, LiveRigTargetPoints["Waist"].BoneTarget);
 	
@@ -388,6 +399,9 @@ void ARG_PlayerCharacter::TripPlayer()
 
 void ARG_PlayerCharacter::UnTripPlayer()
 {
+	if (!bIsPlayerTripped)
+		return;
+	
 	bIsPlayerTripped = false;
 	
 	if (GamePlayerState->IsAlive() && !GamePlayerState->IsInvincible())
@@ -417,6 +431,14 @@ void ARG_PlayerCharacter::UnTripPlayer()
 void ARG_PlayerCharacter::AddForce(const FVector& Force)
 {
 	Skeleton->AddForceToAllBodiesBelow(Force, LiveRigTargetPoints["Waist"].BoneTarget, true, true);
+}
+
+void ARG_PlayerCharacter::Jump()
+{
+	if (bIsPlayerTripped)
+		return;
+	TripPlayer();
+	AddForce(FVector::UpVector * JumpForce);
 }
 
 void ARG_PlayerCharacter::SavePlayerLocation()
@@ -486,9 +508,9 @@ void ARG_PlayerCharacter::AttachTargetsToBoneLocations()
 
 void ARG_PlayerCharacter::TeleportBonesToTarget()
 {
-	Skeleton->SetAllBodiesBelowLinearVelocity(LiveRigBoneData->BoneDataMap["Waist"].BoneName, FVector::ZeroVector, true);
-	ULiveRagdollHelperLib::DisableBoneLive(Skeleton, LiveRigBoneData->BoneDataMap["Waist"].BoneName, FLiveRagdollBoneData{ 1.f, true, true});
-	Skeleton->SetWorldLocation(LRT_Waist->GetComponentLocation());
+	Skeleton->SetAllBodiesBelowLinearVelocity(LiveRigBoneData->BoneDataMap["Base"].BoneName, FVector::ZeroVector, true);
+	ULiveRagdollHelperLib::DisableBoneLive(Skeleton, LiveRigBoneData->BoneDataMap["Base"].BoneName, FLiveRagdollBoneData{ 1.f, true, true});
+	Skeleton->SetWorldLocation(LRT_Waist->GetComponentLocation(), false, nullptr, ETeleportType::ResetPhysics);
 
 	GetWorld()->GetTimerManager().SetTimer(
 		ResetLimbTimerHandle,
@@ -496,7 +518,7 @@ void ARG_PlayerCharacter::TeleportBonesToTarget()
 		{
 			ULiveRagdollHelperLib::EnableBoneLive(
 				Skeleton,
-				LiveRigBoneData->BoneDataMap["Waist"].BoneName,
+				LiveRigBoneData->BoneDataMap["Base"].BoneName,
 				FLiveRagdollBoneData{1.f, true, true}
 			);
 		}),

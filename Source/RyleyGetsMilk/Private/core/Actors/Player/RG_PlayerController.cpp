@@ -35,9 +35,14 @@ void ARG_PlayerController::BindActions(class ARG_PlayerCharacter* InPlayerCharac
 		}
 		
 		
-		if (const UInputAction* Action = InputConfig->Find("Die"))
+		if (const UInputAction* Action = InputConfig->Find("Ragdoll"))
 		{
-			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, PlayerCharacter, &ARG_PlayerCharacter::Kill);
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, PlayerCharacter, &ARG_PlayerCharacter::TripPlayer);
+		}
+
+		if (const UInputAction* Action = InputConfig->Find("Jump"))
+		{
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, PlayerCharacter, &ARG_PlayerCharacter::Jump);
 		}
 		
 		
