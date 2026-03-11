@@ -7,6 +7,7 @@
 #include "EnhancedInputComponent.h"
 #include "Core/Actors/Player/RG_PlayerCharacter.h"
 #include "Core/Functional/Libraries/CommonBlueprintFunctionLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 ARG_PlayerController::ARG_PlayerController()
 {
@@ -93,6 +94,11 @@ void ARG_PlayerController::BindActions(class ARG_PlayerCharacter* InPlayerCharac
 		{
 			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, PlayerCharacter, &ARG_PlayerCharacter::LoadPlayerLocation);
 		}
+		
+		if (const UInputAction* Action = InputConfig->Find("EndGame"))
+		{
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Triggered, this, &ARG_PlayerController::QuitGame);
+		}
 	}
 }
 
@@ -131,4 +137,9 @@ void ARG_PlayerController::SteerFeet(const FInputActionValue& Value)
 	const FVector2D Axis = Value.Get<FVector2D>();
 	
 	PlayerCharacter->SteerFeet(Axis);
+}
+
+void ARG_PlayerController::QuitGame()
+{
+	UKismetSystemLibrary::QuitGame(this, this, EQuitPreference::Quit, false);
 }

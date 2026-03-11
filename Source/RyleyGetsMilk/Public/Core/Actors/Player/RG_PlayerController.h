@@ -39,4 +39,7 @@ private:
 	
 	UFUNCTION()
 	void SteerFeet(const FInputActionValue& Value);
+	
+	UFUNCTION()
+	void QuitGame();
 };

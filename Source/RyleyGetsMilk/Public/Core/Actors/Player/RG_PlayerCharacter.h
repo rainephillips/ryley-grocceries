@@ -8,6 +8,7 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerDied);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerRespawned);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerWin);
 
 
 USTRUCT(BlueprintType)
@@ -77,6 +78,9 @@ public:
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintAssignable, Category = "Events")
 	FOnPlayerRespawned OnPlayerRespawned;
+	
+	UPROPERTY(VisibleInstanceOnly, BlueprintAssignable, BlueprintCallable, Category = "Events")
+	FOnPlayerWin OnPlayerWin;
 
 public:
 	// Sets default values for this character's properties

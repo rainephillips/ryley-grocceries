@@ -247,6 +247,7 @@ void ARG_PlayerCharacter::Kill()
 	
 	
 	GamePlayerState->bIsAlive = false;
+	DeathCount++;
 	OnPlayerDied.Broadcast();
 
 	AudioPlayer->SetSound(DeathSound);
@@ -266,8 +267,6 @@ void ARG_PlayerCharacter::Kill()
 	}
 
 	Boom->AttachToComponent(Skeleton, FAttachmentTransformRules::SnapToTargetNotIncludingScale, LiveRigTargetPoints["Waist"].BoneTarget);
-
-	DeathCount++;
 
 	if (bCanPlayerRespawn)
 	{
