@@ -16,6 +16,9 @@ APlayerCheckpoint::APlayerCheckpoint()
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	SetRootComponent(Root);
 
+	SaveLocation = CreateDefaultSubobject<USceneComponent>(TEXT("SaveLocation"));
+	SaveLocation->SetupAttachment(RootComponent);
+	
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(Root);
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -53,7 +56,7 @@ void APlayerCheckpoint::OnOverlap(class UPrimitiveComponent* OverlappedComponent
 			if (PlayerCharacter->GamePlayerState->IsAlive())
 			{
 				PlayerCharacter->AttachTargetsToBoneLocations();
-				PlayerCharacter->SavePlayerLocation();
+				PlayerCharacter->SetSavePlayerLocation(SaveLocation->GetComponentLocation());
 			}
 		}
 	}

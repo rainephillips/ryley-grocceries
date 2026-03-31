@@ -157,6 +157,9 @@ public:
 public:
 	UFUNCTION(BlueprintCallable, Category = "Respawn Handling")
 	void SavePlayerLocation();
+	
+	UFUNCTION(BlueprintCallable, Category = "Respawn Handling")
+	void SetSavePlayerLocation(const FVector& WaistLocation);
 
 	UFUNCTION(BlueprintCallable, Category = "Respawn Handling")
 	void LoadPlayerLocation();

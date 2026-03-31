@@ -15,6 +15,9 @@ public:
 	class USceneComponent* Root;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	class USceneComponent* SaveLocation;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	class UBoxComponent* Zone;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)

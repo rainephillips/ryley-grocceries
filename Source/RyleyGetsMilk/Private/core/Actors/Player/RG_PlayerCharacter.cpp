@@ -20,11 +20,11 @@
 
 #define LEG_LENGTH_HEIGHT_MULT 0.75f
 #define LEG_LENGTH_DIST_MULT 2.f
-#define RESPAWN_ENABLE_RAGDOLL_TIME 0.5f
+#define RESPAWN_ENABLE_RAGDOLL_TIME 0.25f
 #define LEG_LENGTH_DROP_MULT 4.f
 #define ARM_LENGTH_MULT 1.5f
 #define TRIP_KILL_LIMIT 5.5f
-#define FUNNY_RAGDOLL_MULT 10.f
+#define FUNNY_RAGDOLL_MULT 1.f
 #define HANDLE_INTERP 10.0f
 #define WAIST_HANDLE_STRENGTH 75.0f
 #define HEAD_HANDLE_STRENGTH 50.0f
@@ -241,10 +241,9 @@ void ARG_PlayerCharacter::Kill()
 
 	if (GamePlayerState->IsInvincible())
 		return;
-
-	if (bIsPlayerTripped)
-		bIsPlayerTripped = false;
 	
+	bIsPlayerTripped = false;
+	TripTimer = -1.f;
 	
 	GamePlayerState->bIsAlive = false;
 	DeathCount++;
@@ -267,11 +266,11 @@ void ARG_PlayerCharacter::Kill()
 	}
 
 	Boom->AttachToComponent(Skeleton, FAttachmentTransformRules::SnapToTargetNotIncludingScale, LiveRigTargetPoints["Waist"].BoneTarget);
+	DropItem(false, true);
+	DropItem(true, true);
 
 	if (bCanPlayerRespawn)
 	{
-		DropItem(false, true);
-		DropItem(true, true);
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ARG_PlayerCharacter::LoadPlayerLocation, TimeBeforeRespawn);
 	}
 		
@@ -415,8 +414,6 @@ void ARG_PlayerCharacter::UnTripPlayer()
 		DropLeg(false, true);
 		DropLeg(true, true);
 	}
-		
-	
 	bTripStepImmunity = 2;
 	
 	Boom->AttachToComponent(LRT_Waist, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
@@ -455,30 +452,45 @@ void ARG_PlayerCharacter::SavePlayerLocation()
 		};
 }
 
+void ARG_PlayerCharacter::SetSavePlayerLocation(const FVector& WaistLocation)
+{
+	if (!GamePlayerState)
+		return;
+	
+	GamePlayerState->RespawnData =
+		FPlayerRespawnData{
+			WaistLocation + FVector::DownVector * LegLength,
+			WaistLocation + FVector::DownVector * LegLength,
+			WaistLocation + FVector::UpVector * LegLength,
+			WaistLocation,
+			WaistLocation,
+		};
+}
+
 void ARG_PlayerCharacter::LoadPlayerLocation()
 {
 	if (!GamePlayerState)
 		return;
-
-	GamePlayerState->bIsAlive = true;
+	
 	GamePlayerState->bIsInvincible = true;
 
 	OnPlayerRespawned.Broadcast();
 
 	const FPlayerRespawnData& Data = GamePlayerState->RespawnData;
-	SetActorLocation(Data.MainLocation);
 	LRT_LeftFoot->SetWorldLocation(Data.LeftFootLocation);
 	LRT_RightFoot->SetWorldLocation(Data.RightFootLocation);
 	LRT_Waist->SetWorldLocation(Data.WaistLocation);
 	LRT_Head->SetWorldLocation(Data.HeadLocation);
 	
 	TeleportBonesToTarget();
-
+	
 	GamePlayerState->bHeadDetached = false;
 	GrabBone(LiveRigTargetPoints["Head"]);
 	GrabBone(LiveRigTargetPoints["Waist"]);
 	GrabBone(LiveRigTargetPoints["LeftFoot"]);
 	GrabBone(LiveRigTargetPoints["RightFoot"]);
+	LiveRigTargetPoints["LeftHand"].PhysicsHandle->ReleaseComponent();
+	LiveRigTargetPoints["RightHand"].PhysicsHandle->ReleaseComponent();
 
 	GamePlayerState->bLeftLegLifted = false;
 	GamePlayerState->bRightLegLifted = false;
@@ -486,6 +498,7 @@ void ARG_PlayerCharacter::LoadPlayerLocation()
 	Boom->AttachToComponent(LRT_Waist, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, GamePlayerState, &ARG_PlayerState::RevertInvincibility, RespawnInvincibilityTime);
+	GamePlayerState->bIsAlive = true;
 }
 
 void ARG_PlayerCharacter::GrabBone(FLiveRigTargetData& RigData)
@@ -509,7 +522,8 @@ void ARG_PlayerCharacter::TeleportBonesToTarget()
 {
 	Skeleton->SetAllBodiesBelowLinearVelocity(LiveRigBoneData->BoneDataMap["Base"].BoneName, FVector::ZeroVector, true);
 	ULiveRagdollHelperLib::DisableBoneLive(Skeleton, LiveRigBoneData->BoneDataMap["Base"].BoneName, FLiveRagdollBoneData{ 1.f, true, true});
-	Skeleton->SetWorldLocation(LRT_Waist->GetComponentLocation(), false, nullptr, ETeleportType::ResetPhysics);
+	Skeleton->SetWorldLocation(LRT_Waist->GetComponentLocation() + FVector::DownVector * LegLength, false, nullptr, ETeleportType::ResetPhysics);
+	Skeleton->SetWorldRotation(FRotator::ZeroRotator);
 
 	GetWorld()->GetTimerManager().SetTimer(
 		ResetLimbTimerHandle,
